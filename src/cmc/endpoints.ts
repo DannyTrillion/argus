@@ -26,7 +26,7 @@
  *   GET /v1/content/latest
  *   GET /v1/key/info
  */
-import { cmcGet } from "./http.js";
+import { cmcGet, CmcApiError } from "./http.js";
 
 // ---------- shared shapes ----------
 
@@ -62,6 +62,7 @@ export interface Coin {
   quote: Quote;
 }
 
+
 type RawQuoteMap = Record<string, Quote & { symbol?: string }> | Array<Quote & { symbol?: string }>;
 interface RawCoin extends Omit<Coin, "quote" | "tags"> {
   quote: RawQuoteMap;
@@ -69,6 +70,15 @@ interface RawCoin extends Omit<Coin, "quote" | "tags"> {
 }
 
 const CONVERT = "USD";
+
+/** Round to a sensible precision so tool results stay small: 2dp for percentages, ~6 significant figures otherwise. */
+function num(v: number | null | undefined, kind: "pct" | "usd" | "raw" = "raw"): number | null {
+  if (v === null || v === undefined || !Number.isFinite(v)) return null;
+  if (kind === "pct") return Math.round(v * 100) / 100;
+  if (Math.abs(v) >= 1000) return Math.round(v);
+  if (Math.abs(v) >= 1) return Math.round(v * 10000) / 10000;
+  return Number(v.toPrecision(5));
+}
 
 /** CMC v2 returns quote as a map keyed by currency; v3 may return an array. Handle both. */
 function pickQuote(raw: RawQuoteMap | undefined): Quote {
@@ -86,38 +96,41 @@ function pickQuote(raw: RawQuoteMap | undefined): Quote {
     : (raw[CONVERT] ?? Object.values(raw)[0]);
   if (!q) return empty;
   return {
-    price: q.price ?? null,
-    volume_24h: q.volume_24h ?? null,
-    volume_change_24h: q.volume_change_24h ?? null,
-    percent_change_1h: q.percent_change_1h ?? null,
-    percent_change_24h: q.percent_change_24h ?? null,
-    percent_change_7d: q.percent_change_7d ?? null,
-    percent_change_30d: q.percent_change_30d ?? null,
-    percent_change_60d: q.percent_change_60d ?? null,
-    percent_change_90d: q.percent_change_90d ?? null,
-    market_cap: q.market_cap ?? null,
-    market_cap_dominance: q.market_cap_dominance ?? null,
-    fully_diluted_market_cap: q.fully_diluted_market_cap ?? null,
+    price: num(q.price),
+    volume_24h: num(q.volume_24h),
+    volume_change_24h: num(q.volume_change_24h, "pct"),
+    percent_change_1h: num(q.percent_change_1h, "pct"),
+    percent_change_24h: num(q.percent_change_24h, "pct"),
+    percent_change_7d: num(q.percent_change_7d, "pct"),
+    percent_change_30d: num(q.percent_change_30d, "pct"),
+    percent_change_60d: num(q.percent_change_60d, "pct"),
+    percent_change_90d: num(q.percent_change_90d, "pct"),
+    market_cap: num(q.market_cap),
+    market_cap_dominance: num(q.market_cap_dominance, "pct"),
+    fully_diluted_market_cap: num(q.fully_diluted_market_cap),
     last_updated: q.last_updated,
   };
 }
 
+/** Tags that describe what a project is, as opposed to which VC portfolio lists it. */
+const NOISY_TAG = /portfolio|ecosystem|launchpad|-chain$|^bnb|^binance|alameda|paradigm|pantera|coinbase|multicoin|a16z|dragonfly|polychain|sequoia|placeholder|dcg|galaxy/i;
+
 function normalizeCoin(raw: RawCoin): Coin {
+  const tags = raw.tags
+    ?.map((t) => (typeof t === "string" ? t : (t.name ?? t.slug ?? "")))
+    .filter((t) => t && !NOISY_TAG.test(t))
+    .slice(0, 5);
   return {
     id: raw.id,
     name: raw.name,
     symbol: raw.symbol,
     slug: raw.slug,
     cmc_rank: raw.cmc_rank ?? null,
-    num_market_pairs: raw.num_market_pairs ?? null,
-    circulating_supply: raw.circulating_supply ?? null,
-    total_supply: raw.total_supply ?? null,
-    max_supply: raw.max_supply ?? null,
-    date_added: raw.date_added,
-    tags: raw.tags?.map((t) => (typeof t === "string" ? t : (t.name ?? t.slug ?? ""))).filter(Boolean).slice(0, 12),
-    platform: raw.platform
-      ? { name: raw.platform.name, symbol: raw.platform.symbol, token_address: raw.platform.token_address }
-      : null,
+    circulating_supply: num(raw.circulating_supply),
+    max_supply: num(raw.max_supply),
+    date_added: raw.date_added?.slice(0, 10),
+    tags: tags && tags.length ? tags : undefined,
+    platform: raw.platform?.name ? { name: raw.platform.name } : undefined,
     quote: pickQuote(raw.quote),
   };
 }
@@ -323,14 +336,12 @@ export async function categories(opts: { start?: number; limit?: number }): Prom
   return res.data.map((c) => ({
     id: c.id,
     name: c.name,
-    title: c.title,
     num_tokens: c.num_tokens,
-    avg_price_change: c.avg_price_change,
-    market_cap: c.market_cap,
-    market_cap_change: c.market_cap_change,
-    volume: c.volume,
-    volume_change: c.volume_change,
-    last_updated: c.last_updated,
+    avg_price_change: num(c.avg_price_change, "pct") ?? undefined,
+    market_cap: num(c.market_cap) ?? undefined,
+    market_cap_change: num(c.market_cap_change, "pct") ?? undefined,
+    volume: num(c.volume) ?? undefined,
+    volume_change: num(c.volume_change, "pct") ?? undefined,
   }));
 }
 
@@ -372,14 +383,24 @@ export async function gainersLosers(opts: {
   direction?: "gainers" | "losers";
   limit?: number;
 }): Promise<Coin[]> {
-  const res = await cmcGet<unknown>("/v1/cryptocurrency/trending/gainers-losers", {
-    time_period: opts.timePeriod ?? "24h",
-    sort: "percent_change_24h",
-    sort_dir: opts.direction === "losers" ? "asc" : "desc",
-    limit: opts.limit ?? 20,
-    convert: CONVERT,
-  });
-  return coinsFrom(res.data);
+  const timePeriod = opts.timePeriod ?? "24h";
+  try {
+    const res = await cmcGet<unknown>("/v1/cryptocurrency/trending/gainers-losers", {
+      time_period: timePeriod,
+      sort: "percent_change_24h",
+      sort_dir: opts.direction === "losers" ? "asc" : "desc",
+      limit: opts.limit ?? 20,
+      convert: CONVERT,
+    });
+    return coinsFrom(res.data);
+  } catch (err) {
+    // Basic plan fallback: screen the liquid universe from listings and sort locally.
+    if (err instanceof CmcApiError && err.errorCode === PLAN_LIMIT_ERROR) {
+      const sort: ListingSort = timePeriod === "1h" ? "percent_change_1h" : timePeriod === "7d" ? "percent_change_7d" : "percent_change_24h";
+      return listings({ limit: opts.limit ?? 20, sort, sortDir: opts.direction === "losers" ? "asc" : "desc", volume24hMin: 5_000_000, marketCapMin: 50_000_000 });
+    }
+    throw err;
+  }
 }
 
 export interface Candle {
@@ -393,6 +414,76 @@ export interface Candle {
   market_cap: number;
 }
 
+export interface Series {
+  id: number;
+  name: string;
+  symbol: string;
+  candles: Candle[];
+  /** "ohlcv" for true candles, "quotes_historical" when built from daily closes (Basic plan fallback). */
+  source: "ohlcv" | "quotes_historical";
+}
+
+/**
+ * Daily historical quotes (price, volume, market cap at each UTC midnight).
+ * Available on every plan including Basic, so it is the fallback when OHLCV is not.
+ */
+export async function quotesHistorical(opts: { id?: number; symbol?: string; count?: number; interval?: string; timeStart?: string; timeEnd?: string }): Promise<Series> {
+  interface RawPoint {
+    timestamp: string;
+    quote: Record<string, { price: number; volume_24h: number; market_cap: number; timestamp: string }>;
+  }
+  interface RawAsset {
+    id: number;
+    name: string;
+    symbol: string;
+    is_active?: number;
+    quotes: RawPoint[];
+  }
+  const res = await cmcGet<Record<string, RawAsset | RawAsset[]> | RawAsset>("/v3/cryptocurrency/quotes/historical", {
+    id: opts.id,
+    symbol: opts.symbol,
+    count: opts.count ?? 30,
+    interval: opts.interval ?? "daily",
+    time_start: opts.timeStart,
+    time_end: opts.timeEnd,
+    convert: CONVERT,
+    skip_invalid: true,
+  });
+  let asset: RawAsset | undefined;
+  if (res.data && "quotes" in res.data) asset = res.data as RawAsset;
+  else {
+    const candidates: RawAsset[] = [];
+    for (const v of Object.values(res.data as Record<string, RawAsset | RawAsset[]>)) {
+      if (Array.isArray(v)) candidates.push(...v);
+      else candidates.push(v);
+    }
+    // Symbol lookups can return several assets; keep the active one with the most data.
+    asset = candidates.filter((c) => c.is_active !== 0).sort((a, b) => b.quotes.length - a.quotes.length)[0] ?? candidates[0];
+  }
+  if (!asset) throw new Error("No historical quotes returned");
+  return {
+    id: asset.id,
+    name: asset.name,
+    symbol: asset.symbol,
+    source: "quotes_historical",
+    candles: asset.quotes.map((p) => {
+      const q = p.quote[CONVERT] ?? Object.values(p.quote)[0];
+      return {
+        time_open: p.timestamp,
+        time_close: p.timestamp,
+        open: q.price,
+        high: q.price,
+        low: q.price,
+        close: q.price,
+        volume: q.volume_24h,
+        market_cap: q.market_cap,
+      };
+    }),
+  };
+}
+
+const PLAN_LIMIT_ERROR = 1006;
+
 export async function ohlcv(opts: {
   id?: number;
   symbol?: string;
@@ -401,7 +492,28 @@ export async function ohlcv(opts: {
   interval?: string;
   timeStart?: string;
   timeEnd?: string;
-}): Promise<{ id: number; name: string; symbol: string; candles: Candle[] }> {
+}): Promise<Series> {
+  try {
+    return await ohlcvStrict(opts);
+  } catch (err) {
+    // Basic plan cannot call OHLCV. Daily closes from quotes/historical are close enough for
+    // returns, drawdown, volatility and correlation, so degrade gracefully instead of failing.
+    if (err instanceof CmcApiError && err.errorCode === PLAN_LIMIT_ERROR && (opts.timePeriod ?? "daily") === "daily") {
+      return quotesHistorical({ id: opts.id, symbol: opts.symbol, count: opts.count, timeStart: opts.timeStart, timeEnd: opts.timeEnd });
+    }
+    throw err;
+  }
+}
+
+async function ohlcvStrict(opts: {
+  id?: number;
+  symbol?: string;
+  timePeriod?: "daily" | "hourly";
+  count?: number;
+  interval?: string;
+  timeStart?: string;
+  timeEnd?: string;
+}): Promise<Series> {
   interface RawOhlcv {
     id: number;
     name: string;
@@ -431,6 +543,7 @@ export async function ohlcv(opts: {
     id: raw.id,
     name: raw.name,
     symbol: raw.symbol,
+    source: "ohlcv",
     candles: raw.quotes.map((q) => {
       const c = q.quote[CONVERT] ?? Object.values(q.quote)[0];
       return {

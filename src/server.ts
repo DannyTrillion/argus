@@ -42,7 +42,13 @@ app.post("/api/chat", async (c) => {
 
   return streamSSE(c, async (stream) => {
     let id = 0;
-    const send = (event: string, data: unknown) => stream.writeSSE({ event, data: JSON.stringify(data), id: String(id++) });
+    // Writes are serialized through a promise chain so events keep their order and the
+    // stream is not closed while the final "done" event is still in flight.
+    let chain: Promise<void> = Promise.resolve();
+    const send = (event: string, data: unknown): Promise<void> => {
+      chain = chain.then(() => stream.writeSSE({ event, data: JSON.stringify(data), id: String(id++) })).catch(() => undefined);
+      return chain;
+    };
     await send("session", { sessionId });
     try {
       const result = await runAgent({
@@ -55,6 +61,7 @@ app.post("/api/chat", async (c) => {
     } catch (err) {
       await send("error", { type: "error", message: describeError(err) });
     }
+    await chain;
   });
 });
 

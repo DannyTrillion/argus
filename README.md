@@ -25,7 +25,7 @@ track **AI Agents and Automation**.
 ```bash
 pnpm install
 cp .env.example .env      # add CMC_API_KEY and ANTHROPIC_API_KEY
-pnpm dev                  # web UI on http://localhost:3000
+pnpm dev                  # web UI on http://localhost:3100
 pnpm ask "how is the market today"
 pnpm brief                # markdown market brief to stdout
 pnpm ask --keyinfo        # show your CMC plan and remaining credits
@@ -34,6 +34,12 @@ pnpm ask --keyinfo        # show your CMC plan and remaining credits
 Without `CMC_API_KEY`, Argus falls back to CMC's keyless public API. That is enough
 for global metrics, quotes, listings, categories, Fear & Greed and Altcoin Season, but
 OHLCV, liquidations, trending and news need a key.
+
+Plan-aware fallbacks: on the free Basic plan, OHLCV and the gainers/losers endpoint
+return error 1006. Argus detects that and degrades gracefully: candles come from
+`/v3/cryptocurrency/quotes/historical` (daily closes) and movers come from a filtered
+listings screen sorted locally. The tool result tells the model which source was used
+so the answer can say so.
 
 ## CoinMarketCap endpoints used
 

@@ -84,7 +84,7 @@ export function createTools(emit: Emit) {
     description:
       "Ranked list of coins with live market data. Use to answer 'top N by X', to screen the market (filters on market cap and volume), or to get a broad snapshot. Default sort is market cap rank. Each result costs credits per 250 coins, so keep limit modest (<= 200).",
     inputSchema: z.object({
-      limit: z.number().int().min(1).max(500).default(50),
+      limit: z.number().int().min(1).max(500).default(30),
       start: z.number().int().min(1).default(1).describe("1-based offset for pagination"),
       sort: z
         .enum(["market_cap", "volume_24h", "percent_change_1h", "percent_change_24h", "percent_change_7d", "date_added", "price"])
@@ -200,12 +200,13 @@ export function createTools(emit: Emit) {
       const series = await Promise.all(
         input.symbols.map(async (s) => {
           const r = await cmc.ohlcv({ symbol: s.toUpperCase(), timePeriod: "daily", count: input.days + 1 });
-          return { symbol: r.symbol, candles: r.candles };
+          return { symbol: r.symbol, candles: r.candles, source: r.source };
         }),
       );
       const base = series[0];
       return series.map((s) => ({
         ...summarizeCandles(s.symbol, s.candles),
+        data_source: s.source === "ohlcv" ? "daily OHLCV candles" : "daily closing quotes (intraday high/low not available on this plan)",
         correlation_with_first: s === base ? 1 : correlationByDate(base.candles, s.candles),
       }));
     }),
