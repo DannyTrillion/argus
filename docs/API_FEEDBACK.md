@@ -28,6 +28,17 @@ Notes gathered while building Argus. Kept as a running log; the submission form 
    global-metrics historical, content/latest) instead of the 403 "API key required" that
    other unsupported endpoints return. Hard to tell an outage from a plan limit.
 
+6. **Tag formats differ by endpoint.** `/v3/cryptocurrency/quotes/latest` returns tags as
+   objects whose `name` is a display label ("Smart Contracts", with trailing spaces in some
+   cases such as "FTX Bankruptcy Estate "), while `/v3/cryptocurrency/listings/latest`
+   returns slug strings ("smart-contracts"). Matching coins by tag across the two endpoints
+   silently fails until both are normalized to slugs.
+
+7. **Tags mix taxonomy with classification.** "SEC/CFTC Token Taxonomy", "FTX Bankruptcy
+   Estate", "US Strategic Crypto Reserve" and VC-portfolio tags sit alongside "layer-1" and
+   "defi" in the same list. A `category` field per tag (the v3 quotes response has one)
+   exposed consistently everywhere would let clients filter without a hand-written deny list.
+
 ## What it made possible
 
 - Every question in the demo is answered from live data with a visible per-call credit cost.

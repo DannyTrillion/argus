@@ -101,13 +101,13 @@ export default function Explore() {
           <Link key={c.id} to={`/coin/${c.id}`} className="glass flex items-center gap-3 p-3">
             <img src={`https://s2.coinmarketcap.com/static/img/coins/32x32/${c.id}.png`} alt="" className="h-8 w-8 rounded-full bg-surface-2" loading="lazy" />
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 text-[13.5px] font-medium">
-                <span className="font-mono text-[11px] text-ink-3">{c.cmc_rank}</span> {c.name} <span className="text-ink-3">{c.symbol}</span>
+              <div className="truncate text-[13.5px] font-medium">
+                <span className="mr-1 font-mono text-[11px] text-ink-3">{c.cmc_rank}</span>{c.name} <span className="text-ink-3">{c.symbol}</span>
               </div>
-              <div className="font-mono text-[11px] text-ink-3">cap {usd(c.quote.market_cap, { compact: true })} · vol {usd(c.quote.volume_24h, { compact: true })}</div>
+              <div className="truncate font-mono text-[11px] text-ink-3">{usd(c.quote.market_cap, { compact: true })} · {usd(c.quote.volume_24h, { compact: true })} vol</div>
             </div>
-            <Sparkline data={c.sparkline} width={64} height={22} />
-            <div className="w-[82px] text-right">
+            <div className="hidden min-[400px]:block"><Sparkline data={c.sparkline} width={56} height={22} /></div>
+            <div className="w-[78px] shrink-0 text-right">
               <div className="font-mono text-[13px]">{usd(c.quote.price)}</div>
               <Change value={c.quote.percent_change_24h} className="text-[11.5px]" />
             </div>

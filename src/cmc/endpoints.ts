@@ -113,13 +113,16 @@ function pickQuote(raw: RawQuoteMap | undefined): Quote {
 }
 
 /** Tags that describe what a project is, as opposed to which VC portfolio lists it. */
-const NOISY_TAG = /portfolio|ecosystem|launchpad|-chain$|^bnb|^binance|alameda|paradigm|pantera|coinbase|multicoin|a16z|dragonfly|polychain|sequoia|placeholder|dcg|galaxy/i;
+const NOISY_TAG = /portfolio|ecosystem|launchpad|-chain$|^bnb|^binance|alameda|paradigm|pantera|coinbase|multicoin|a16z|dragonfly|polychain|sequoia|placeholder|dcg|galaxy|estate|reserve|taxonomy|sec-cftc|made-in|winklevoss|alt-season|commodit|labs$|ventures|capital/i;
 
 function normalizeCoin(raw: RawCoin): Coin {
+  // v3 endpoints return tag objects, v1/v2 return slug strings. Normalize to slugs so
+  // tags compare equal across endpoints (used for related-coin matching).
   const tags = raw.tags
-    ?.map((t) => (typeof t === "string" ? t : (t.name ?? t.slug ?? "")))
+    ?.map((t) => (typeof t === "string" ? t : (t.slug ?? t.name ?? "")))
+    .map((t) => t.trim().toLowerCase().replace(/\s+/g, "-"))
     .filter((t) => t && !NOISY_TAG.test(t))
-    .slice(0, 5);
+    .slice(0, 6);
   return {
     id: raw.id,
     name: raw.name,

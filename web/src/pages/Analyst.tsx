@@ -7,6 +7,7 @@ import { Markdown } from "../components/ui/Markdown";
 import type { CallRecord } from "../lib/api";
 import { Mascot } from "../components/ui/Mascot";
 import { AnswerCharts } from "../components/analyst/AnswerCharts";
+import { CopyButton } from "../components/ui/CopyButton";
 
 const SUGGESTIONS = [
   "How is the market today?",
@@ -80,8 +81,9 @@ function Bubble({ m }: { m: ChatMessage }) {
       {m.error && <div className="mt-2 text-[12.5px] text-down">{m.error}</div>}
       <Calls calls={m.calls} />
       {m.usage && (
-        <div className="mt-2 font-mono text-[10.5px] text-ink-3">
-          tokens in {m.usage.input_tokens.toLocaleString()} · out {m.usage.output_tokens.toLocaleString()}{m.usage.cache_read_input_tokens ? ` · cache ${m.usage.cache_read_input_tokens.toLocaleString()}` : ""}
+        <div className="mt-2 flex items-center justify-between gap-3 font-mono text-[10.5px] text-ink-3">
+          <span>tokens in {m.usage.input_tokens.toLocaleString()} · out {m.usage.output_tokens.toLocaleString()}{m.usage.cache_read_input_tokens ? ` · cache ${m.usage.cache_read_input_tokens.toLocaleString()}` : ""}</span>
+          {m.text && <CopyButton text={m.text} />}
         </div>
       )}
     </div>

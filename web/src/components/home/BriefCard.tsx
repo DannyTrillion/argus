@@ -7,6 +7,7 @@ import { timeAgo } from "../../lib/format";
 import { Card, CardTitle } from "../ui/Card";
 import { Markdown } from "../ui/Markdown";
 import { Skeleton } from "../ui/Skeleton";
+import { CopyButton } from "../ui/CopyButton";
 
 export function BriefCard() {
   const { data, isLoading, isError } = useQuery({ queryKey: ["brief"], queryFn: api.brief, staleTime: 10 * 60_000, refetchInterval: 10 * 60_000, retry: 2 });
@@ -38,9 +39,12 @@ export function BriefCard() {
             <Markdown text={data.text} className="columns-1 lg:columns-2 lg:gap-10" />
           </div>
           {!open && <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#101012] to-transparent" />}
-          <button onClick={() => setOpen((o) => !o)} className="relative mt-2 flex items-center gap-1 text-[12px] text-gold hover:text-gold-2">
-            <ChevronDown size={13} className={clsx("transition-transform", open && "rotate-180")} /> {open ? "Show less" : "Read the full brief"}
-          </button>
+          <div className="relative mt-2 flex items-center justify-between">
+            <button onClick={() => setOpen((o) => !o)} className="flex items-center gap-1 text-[12px] text-gold hover:text-gold-2">
+              <ChevronDown size={13} className={clsx("transition-transform", open && "rotate-180")} /> {open ? "Show less" : "Read the full brief"}
+            </button>
+            <CopyButton text={`# Argus market brief · ${new Date(data.generatedAt).toUTCString()}\n\n${data.text}`} label="Copy brief" />
+          </div>
         </div>
       )}
     </Card>
