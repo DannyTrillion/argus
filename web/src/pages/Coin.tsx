@@ -11,6 +11,7 @@ import { Skeleton } from "../components/ui/Skeleton";
 import { PriceChart } from "../components/coin/PriceChart";
 import { AskInline } from "../components/coin/AskInline";
 import { Peers } from "../components/coin/Peers";
+import { AlertButton } from "../components/coin/AlertButton";
 
 function Stat({ label, value, sub }: { label: string; value: string; sub?: React.ReactNode }) {
   return (
@@ -64,9 +65,12 @@ export default function CoinPage() {
             </div>
             <div className="mt-1 font-mono text-[10.5px] text-ink-3">1h · 24h · 7d</div>
           </div>
-          <button onClick={() => wl.toggle(coin.id)} className={clsx("glass-2 flex h-11 w-11 items-center justify-center rounded-full", wl.has(coin.id) ? "text-gold" : "text-ink-2 hover:text-ink")} aria-label="Toggle watchlist">
-            <Star size={17} fill={wl.has(coin.id) ? "currentColor" : "none"} />
-          </button>
+          <div className="flex items-center gap-2">
+            <AlertButton coinId={coin.id} symbol={coin.symbol} price={q.price} />
+            <button onClick={() => wl.toggle(coin.id)} className={clsx("glass-2 flex h-11 w-11 items-center justify-center rounded-full", wl.has(coin.id) ? "text-gold" : "text-ink-2 hover:text-ink")} aria-label="Toggle watchlist">
+              <Star size={17} fill={wl.has(coin.id) ? "currentColor" : "none"} />
+            </button>
+          </div>
         </div>
       </div>
 

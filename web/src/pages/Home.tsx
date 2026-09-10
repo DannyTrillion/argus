@@ -31,11 +31,9 @@ export default function Home() {
           <div className="text-[13px] text-ink-2">{greeting()} · {dateLabel()}</div>
           <h1 className="font-display mt-1 text-[30px] font-light leading-tight tracking-tight sm:text-[40px]">The market, <span className="text-glow">read live.</span></h1>
         </div>
-        <div className="glass-2 pill flex items-center gap-2.5 whitespace-nowrap px-3 py-1.5 font-mono text-[11px] text-ink-2">
-          <span className="live-dot" /> LIVE
-          <span className="text-ink-3">·</span>
-          <RefreshCw size={12} className={overview.isFetching ? "animate-spin text-ink-3" : "text-ink-3"} />
-          <span className="text-ink-3">{overview.data ? timeAgo(overview.data.updatedAt) : "loading"}</span>
+        <div className="flex items-center gap-2 whitespace-nowrap text-[12px] text-ink-3">
+          <RefreshCw size={12} className={overview.isFetching ? "animate-spin" : ""} />
+          <span>Live data · updated {overview.data ? timeAgo(overview.data.updatedAt) : "…"}</span>
         </div>
       </motion.div>
 

@@ -2,12 +2,15 @@ import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
-import { Search, Sparkles, LayoutGrid, Compass, Star, MessageSquareText, CircleHelp } from "lucide-react";
+import { Search, Sparkles, LayoutGrid, Compass, Star, MessageSquareText, CircleHelp, Bell } from "lucide-react";
 import clsx from "clsx";
 import { api } from "../lib/api";
 import { Tour, useTour } from "./Tour";
 import { Mascot } from "./ui/Mascot";
 import { Palette, usePalette } from "./Palette";
+import { AlertsPanel } from "./AlertsPanel";
+import { AlertsWatcher } from "./AlertsWatcher";
+import { useAlerts } from "../lib/alerts";
 
 const NAV = [
   { to: "/", label: "Home", icon: LayoutGrid, end: true },
@@ -140,10 +143,15 @@ function MobileTabBar({ onSearch }: { onSearch: () => void }) {
 export function Shell() {
   const tour = useTour();
   const palette = usePalette();
+  const [alertsOpen, setAlertsOpen] = useState(false);
+  const { alerts } = useAlerts();
+  const armed = alerts.filter((a) => !a.triggeredAt).length;
   return (
     <div className="mx-auto flex min-h-full w-full max-w-[1440px] flex-col overflow-x-hidden px-4 pb-[calc(112px+env(safe-area-inset-bottom))] pt-4 sm:px-6 md:pb-8 lg:px-8">
       <Tour open={tour.open && !palette.open} onClose={tour.finish} />
       <Palette open={palette.open} onClose={() => palette.setOpen(false)} />
+      <AlertsPanel open={alertsOpen} onClose={() => setAlertsOpen(false)} />
+      <AlertsWatcher />
       <header className="mb-6 flex min-w-0 items-center gap-3 sm:gap-4">
         <Logo />
         <nav data-tour="nav" className="glass-2 pill mx-auto hidden items-center gap-1 p-1 md:flex">
@@ -168,6 +176,10 @@ export function Shell() {
           <NavLink data-tour="ask" to="/analyst" className="glass-2 pill hidden items-center gap-2 whitespace-nowrap px-3.5 py-2 text-[13px] text-gold hover:bg-gold-dim lg:flex">
             <Sparkles size={14} /> Ask Argus
           </NavLink>
+          <button onClick={() => setAlertsOpen(true)} className="glass-2 relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink-2 hover:text-ink sm:h-9 sm:w-9" aria-label="Alerts" title="Alerts">
+            <Bell size={16} />
+            {armed > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 font-mono text-[9.5px] font-semibold text-bg">{armed}</span>}
+          </button>
           <button onClick={tour.start} className="glass-2 hidden h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-3 hover:text-ink sm:flex" aria-label="Replay the welcome tour" title="Welcome tour">
             <CircleHelp size={16} />
           </button>

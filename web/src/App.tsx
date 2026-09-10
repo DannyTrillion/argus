@@ -5,6 +5,7 @@ import Explore from "./pages/Explore";
 import CoinPage from "./pages/Coin";
 import Watchlist from "./pages/Watchlist";
 import Analyst from "./pages/Analyst";
+import Status from "./pages/Status";
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
         <Route path="coin/:id" element={<CoinPage />} />
         <Route path="watchlist" element={<Watchlist />} />
         <Route path="analyst" element={<Analyst />} />
+        <Route path="status" element={<Status />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

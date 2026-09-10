@@ -74,6 +74,15 @@ export interface PerformanceStats { id: number; symbol: string; periods: Record<
 export interface CoinDetail { coin: Coin; info: CoinInfo | null; performance: PerformanceStats | null; risk: (SeriesStats & { correlation_with_btc: number | null; source: "ohlcv" | "quotes_historical" }) | null }
 export interface CompareResult { days: number; stats: Array<SeriesStats & { source: string }>; normalized: Array<{ date: string; values: Record<string, number | null> }>; correlation: Array<{ a: string; b: string; r: number | null }> }
 export interface MapEntry { id: number; name: string; symbol: string; slug: string; rank?: number }
+export interface Capability { name: string; endpoint: string; ok: boolean; note?: string }
+export interface Status {
+  model: string; keyless: boolean;
+  plan: { credit_limit_monthly?: number; credit_limit_monthly_reset?: string; rate_limit_minute?: number } | null;
+  usage: { current_minute?: { requests_made?: number; requests_left?: number }; current_day?: { credits_used?: number; credits_left?: number }; current_month?: { credits_used?: number; credits_left?: number } } | null;
+  capabilities: Capability[];
+  brief: { generatedAt: string; calls: number; credits: number; durationMs: number } | null;
+  checkedAt: string;
+}
 export interface Brief { text: string; generatedAt: string; model: string; calls: number; credits: number; durationMs: number }
 export interface CallRecord { id: number; endpoint: string; query: Record<string, string>; httpStatus: number; creditCount: number; elapsedMs: number; cached: boolean; at: string; preview: string }
 
@@ -107,4 +116,5 @@ export const api = {
   search: (q: string) => get<MapEntry[]>(`/coins/search?q=${encodeURIComponent(q)}`),
   calls: () => get<CallRecord[]>("/calls"),
   brief: () => get<Brief>("/brief"),
+  status: () => get<Status>("/status"),
 };

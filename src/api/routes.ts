@@ -6,6 +6,7 @@ import * as market from "../services/market.js";
 import { recentCalls, CmcApiError } from "../cmc/http.js";
 import { config } from "../config.js";
 import { currentBrief, getBrief, refreshBrief } from "../services/brief.js";
+import { status } from "../services/status.js";
 
 export const api = new Hono();
 
@@ -56,3 +57,5 @@ api.get("/brief", async (c) => {
   return c.json(await getBrief());
 });
 api.post("/brief/refresh", async (c) => c.json(await refreshBrief()));
+
+api.get("/status", async (c) => c.json(await status()));
