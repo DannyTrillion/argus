@@ -11,6 +11,7 @@ import { Change } from "../components/ui/Change";
 import { Sparkline } from "../components/ui/Sparkline";
 import { Card, CardTitle } from "../components/ui/Card";
 import { Skeleton } from "../components/ui/Skeleton";
+import { Mascot } from "../components/ui/Mascot";
 
 function CompareChart({ symbols, days }: { symbols: string[]; days: number }) {
   const { data, isLoading } = useQuery({ queryKey: ["compare", symbols.join(","), days], queryFn: () => api.compare(symbols, days), enabled: symbols.length >= 1 });
@@ -114,7 +115,11 @@ export default function Watchlist() {
         {isLoading ? (
           <Skeleton className="m-4 h-40" />
         ) : rows.length === 0 ? (
-          <div className="p-8 text-center text-[13px] text-ink-3">Star coins on the Explore page to build your watchlist.</div>
+          <div className="flex flex-col items-center gap-3 p-10 text-center text-[13px] text-ink-3">
+            <Mascot size={88} />
+            <div>Nothing here yet. Star coins on the Explore page and I will keep an eye on them.</div>
+            <Link to="/explore" className="pill mt-1 bg-gold px-3.5 py-1.5 text-[12px] font-medium text-bg hover:bg-gold-2">Open Explore</Link>
+          </div>
         ) : (
           <div className="divide-y divide-line">
             {rows.map((c) => {

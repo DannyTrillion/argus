@@ -60,7 +60,7 @@ export function SectorMap() {
   const ref = useEChart(option);
 
   return (
-    <Card className="lg:col-span-2">
+    <Card className="h-full">
       <CardTitle right={<span className="text-[11px] text-ink-3">size ∝ market cap · colour = 24h change</span>}>Sector map</CardTitle>
       {isLoading ? <Skeleton className="h-[320px]" /> : <div ref={ref} className="h-[320px] w-full" />}
     </Card>

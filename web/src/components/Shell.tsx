@@ -1,9 +1,11 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Sparkles, LayoutGrid, Compass, Star, MessageSquareText } from "lucide-react";
+import { Search, Sparkles, LayoutGrid, Compass, Star, MessageSquareText, CircleHelp } from "lucide-react";
 import clsx from "clsx";
 import { api } from "../lib/api";
+import { Tour, useTour } from "./Tour";
+import { Mascot } from "./ui/Mascot";
 
 const NAV = [
   { to: "/", label: "Home", icon: LayoutGrid, end: true },
@@ -14,12 +16,10 @@ const NAV = [
 
 function Logo() {
   return (
-    <div className="flex items-center gap-2.5">
-      <div className="relative h-8 w-8 rounded-full" style={{ background: "radial-gradient(circle at 35% 35%, #f3d68b, #8b6a1f 70%)" }}>
-        <div className="absolute inset-[11px] rounded-full bg-bg" />
-      </div>
+    <NavLink to="/" className="flex items-center gap-2">
+      <Mascot size={36} glow={false} />
       <span className="font-display text-[17px] font-medium tracking-wide">Argus</span>
-    </div>
+    </NavLink>
   );
 }
 
@@ -28,13 +28,20 @@ function SearchBox() {
   const [open, setOpen] = useState(false);
   const nav = useNavigate();
   const box = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const { data } = useQuery({ queryKey: ["search", q], queryFn: () => api.search(q), enabled: q.trim().length >= 2 });
   const results = (data ?? []).filter((r) => r.rank).slice(0, 6);
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => { if (!box.current?.contains(e.target as Node)) setOpen(false); };
+    // "/" focuses search from anywhere, like GitHub.
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (e.key === "/" && tag !== "INPUT" && tag !== "TEXTAREA") { e.preventDefault(); inputRef.current?.focus(); }
+    };
     document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDoc); document.removeEventListener("keydown", onKey); };
   }, []);
 
   return (
@@ -42,11 +49,12 @@ function SearchBox() {
       <div className="glass-2 pill flex items-center gap-2 px-3.5 py-2">
         <Search size={15} className="text-ink-3" />
         <input
+          ref={inputRef}
           value={q}
           onChange={(e) => { setQ(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
           onKeyDown={(e) => { if (e.key === "Enter" && results[0]) { nav(`/coin/${results[0].id}`); setOpen(false); setQ(""); } }}
-          placeholder="Search a coin"
+          placeholder="Search a coin  /"
           className="w-full min-w-0 bg-transparent text-[13px] text-ink placeholder:text-ink-3 focus:outline-none"
         />
       </div>
@@ -69,11 +77,13 @@ function SearchBox() {
 }
 
 export function Shell() {
+  const tour = useTour();
   return (
     <div className="mx-auto flex min-h-full w-full max-w-[1440px] flex-col overflow-x-hidden px-4 pb-28 pt-4 sm:px-6 md:pb-8 lg:px-8">
+      <Tour open={tour.open} onClose={tour.finish} />
       <header className="mb-6 flex min-w-0 items-center gap-3 sm:gap-4">
         <Logo />
-        <nav className="glass-2 pill mx-auto hidden items-center gap-1 p-1 md:flex">
+        <nav data-tour="nav" className="glass-2 pill mx-auto hidden items-center gap-1 p-1 md:flex">
           {NAV.map((n) => (
             <NavLink
               key={n.to}
@@ -89,15 +99,18 @@ export function Shell() {
         </nav>
         <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-3 md:flex-none">
           <SearchBox />
-          <NavLink to="/analyst" className="glass-2 pill hidden items-center gap-2 whitespace-nowrap px-3.5 py-2 text-[13px] text-gold hover:bg-gold-dim lg:flex">
+          <NavLink data-tour="ask" to="/analyst" className="glass-2 pill hidden items-center gap-2 whitespace-nowrap px-3.5 py-2 text-[13px] text-gold hover:bg-gold-dim lg:flex">
             <Sparkles size={14} /> Ask Argus
           </NavLink>
+          <button onClick={tour.start} className="glass-2 hidden h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-3 hover:text-ink sm:flex" aria-label="Replay the welcome tour" title="Welcome tour">
+            <CircleHelp size={16} />
+          </button>
         </div>
       </header>
       <main className="flex-1">
         <Outlet />
       </main>
-      <nav className="glass fixed bottom-4 left-1/2 z-20 flex max-w-[calc(100vw-24px)] -translate-x-1/2 items-center gap-0.5 p-1 md:hidden">
+      <nav data-tour="nav-mobile" className="glass fixed bottom-4 left-1/2 z-20 flex max-w-[calc(100vw-24px)] -translate-x-1/2 items-center gap-0.5 p-1 md:hidden">
         {NAV.map((n) => (
           <NavLink
             key={n.to}

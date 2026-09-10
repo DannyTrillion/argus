@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { useChat, type ChatMessage } from "../lib/chat";
 import { Markdown } from "../components/ui/Markdown";
 import type { CallRecord } from "../lib/api";
+import { Mascot } from "../components/ui/Mascot";
 
 const SUGGESTIONS = [
   "How is the market today?",
@@ -68,7 +69,8 @@ function Bubble({ m }: { m: ChatMessage }) {
     <div className="glass max-w-[920px] p-5">
       <Steps steps={m.steps} />
       {!m.text && !m.done && (
-        <div className="text-[12.5px] text-ink-3">
+        <div className="flex items-center gap-3 text-[12.5px] text-ink-3">
+          <Mascot size={40} thinking />
           {m.thinking ? <span className="italic">{m.thinking.slice(-220)}</span> : "Reading the market…"}
         </div>
       )}
@@ -126,11 +128,16 @@ export default function Analyst() {
 
       <div className="flex-1 space-y-4">
         {chat.messages.length === 0 && (
-          <div className="glass p-8">
-            <div className="font-display text-[22px] font-light">Every number, sourced live from CoinMarketCap.</div>
-            <p className="mt-2 max-w-[640px] text-[13.5px] leading-relaxed text-ink-2">
-              Argus decides which endpoints answer your question, calls them, computes what the API does not provide (volatility, drawdown, correlation, sector rotation), and shows you every call it made.
-            </p>
+          <div className="glass hud p-8">
+            <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center">
+              <Mascot size={128} className="scan rounded-full" />
+              <div>
+                <div className="font-display text-[24px] font-light">Every number, <span className="text-glow">sourced live.</span></div>
+                <p className="mt-2 max-w-[640px] text-[13.5px] leading-relaxed text-ink-2">
+                  Ask me about a coin, a sector, or the whole market. I decide which CoinMarketCap endpoints answer it, call them, compute what the API does not provide (volatility, drawdown, correlation, rotation), and show you every call I made.
+                </p>
+              </div>
+            </div>
             <div className="mt-5 flex flex-wrap gap-2">
               {SUGGESTIONS.map((s) => (
                 <button key={s} onClick={() => chat.send(s)} className="glass-2 pill px-3.5 py-2 text-[12.5px] text-ink-2 hover:border-gold/40 hover:text-ink">{s}</button>

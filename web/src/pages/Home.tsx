@@ -29,15 +29,17 @@ export default function Home() {
       <motion.div {...fade} transition={{ duration: 0.4 }} className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="text-[13px] text-ink-2">{greeting()} · {dateLabel()}</div>
-          <h1 className="font-display mt-1 text-[30px] font-light leading-tight tracking-tight sm:text-[40px]">The market, read live.</h1>
+          <h1 className="font-display mt-1 text-[30px] font-light leading-tight tracking-tight sm:text-[40px]">The market, <span className="text-glow">read live.</span></h1>
         </div>
-        <div className="flex items-center gap-2 whitespace-nowrap text-[12px] text-ink-3">
-          <RefreshCw size={13} className={overview.isFetching ? "animate-spin" : ""} />
-          {overview.data ? `Updated ${timeAgo(overview.data.updatedAt)}` : "Loading"}
+        <div className="glass-2 pill flex items-center gap-2.5 whitespace-nowrap px-3 py-1.5 font-mono text-[11px] text-ink-2">
+          <span className="live-dot" /> LIVE
+          <span className="text-ink-3">·</span>
+          <RefreshCw size={12} className={overview.isFetching ? "animate-spin text-ink-3" : "text-ink-3"} />
+          <span className="text-ink-3">{overview.data ? timeAgo(overview.data.updatedAt) : "loading"}</span>
         </div>
       </motion.div>
 
-      <motion.div {...fade} transition={{ duration: 0.4, delay: 0.05 }} className="grid min-w-0 grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
+      <motion.div {...fade} transition={{ duration: 0.4, delay: 0.05 }} data-tour="pulse" className="grid min-w-0 grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
         {g ? (
           <>
             <StatTile label="Total market cap" value={usd(g.total_market_cap, { compact: true })} change={g.total_market_cap_yesterday_percentage_change} spark={spark("total_market_cap")} />
@@ -55,7 +57,7 @@ export default function Home() {
         )}
       </motion.div>
 
-      <motion.div {...fade} transition={{ duration: 0.4, delay: 0.1 }} className="grid gap-4 lg:grid-cols-3">
+      <motion.div {...fade} transition={{ duration: 0.4, delay: 0.1 }} data-tour="brief" className="grid gap-4 lg:grid-cols-3">
         <BriefCard />
       </motion.div>
 
@@ -64,13 +66,13 @@ export default function Home() {
       </motion.div>
 
       <motion.div {...fade} transition={{ duration: 0.4, delay: 0.15 }} className="grid gap-4 lg:grid-cols-3">
-        <SectorMap />
+        <div data-tour="sectors" className="lg:col-span-2"><SectorMap /></div>
         <LiquidationsCard data={overview.data?.liquidations} />
       </motion.div>
 
       <motion.div {...fade} transition={{ duration: 0.4, delay: 0.2 }} className="grid gap-4 lg:grid-cols-3">
         <Movers />
-        <Card className="flex flex-col justify-between">
+        <Card className="flex flex-col justify-between" data-tour="ask-card">
           <div>
             <CardTitle>Ask the analyst</CardTitle>
             <p className="text-[13px] leading-relaxed text-ink-2">

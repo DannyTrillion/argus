@@ -37,14 +37,62 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
+/* Ambient layer: slow aurora blobs + a fine engineering grid, both behind everything. */
 body::before {
   content: "";
-  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  position: fixed; inset: -20%; pointer-events: none; z-index: 0;
   background:
-    radial-gradient(1200px 600px at 80% -10%, rgba(231, 196, 106, 0.08), transparent 60%),
-    radial-gradient(900px 500px at -10% 110%, rgba(120, 100, 60, 0.10), transparent 60%);
+    radial-gradient(700px 420px at 78% 8%, rgba(231, 196, 106, 0.13), transparent 60%),
+    radial-gradient(600px 380px at 12% 92%, rgba(143, 183, 255, 0.09), transparent 60%),
+    radial-gradient(500px 320px at 55% 60%, rgba(111, 211, 156, 0.05), transparent 60%);
+  filter: blur(10px);
+  animation: aurora 26s ease-in-out infinite alternate;
 }
+body::after {
+  content: "";
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 20%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 20%, transparent 80%);
+}
+@keyframes aurora {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(-3%, 2%, 0) scale(1.06); }
+  100% { transform: translate3d(2%, -3%, 0) scale(1.02); }
+}
+@media (prefers-reduced-motion: reduce) { body::before { animation: none; } }
 #root { position: relative; z-index: 1; }
+
+/* Gradient display text for hero headlines. */
+.text-glow {
+  background: linear-gradient(92deg, #f7f4ec 0%, #e7c46a 55%, #b7b3a9 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+/* Glow border on hover for interactive cards. */
+.glass { position: relative; transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease; }
+.glass-hover:hover { border-color: rgba(231,196,106,0.35); box-shadow: 0 0 0 1px rgba(231,196,106,0.15), 0 24px 60px -30px rgba(231,196,106,0.35), var(--shadow-card); transform: translateY(-1px); }
+
+/* Corner brackets, the "HUD" accent used sparingly on hero panels. */
+.hud::before, .hud::after {
+  content: ""; position: absolute; width: 14px; height: 14px; pointer-events: none;
+  border-color: rgba(231,196,106,0.55); border-style: solid;
+}
+.hud::before { top: 10px; left: 10px; border-width: 1px 0 0 1px; border-top-left-radius: 4px; }
+.hud::after  { bottom: 10px; right: 10px; border-width: 0 1px 1px 0; border-bottom-right-radius: 4px; }
+
+/* Live indicator */
+.live-dot { position: relative; width: 7px; height: 7px; border-radius: 50%; background: var(--color-up); }
+.live-dot::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 1px solid var(--color-up); opacity: .8; animation: ping 1.8s cubic-bezier(0,0,.2,1) infinite; }
+@keyframes ping { 75%, 100% { transform: scale(2.2); opacity: 0; } }
+
+/* Scanline shimmer used on the mascot frame */
+.scan { position: relative; overflow: hidden; }
+.scan::after { content: ""; position: absolute; left: 0; right: 0; height: 40%; top: -40%; background: linear-gradient(180deg, transparent, rgba(231,196,106,0.10), transparent); animation: scan 4s linear infinite; }
+@keyframes scan { to { top: 120%; } }
 
 .font-display { font-family: var(--font-display); }
 .font-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
