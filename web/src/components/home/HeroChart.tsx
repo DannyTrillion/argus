@@ -61,7 +61,7 @@ export function HeroChart() {
   const ref = useEChart(option);
 
   return (
-    <Card className="hud col-span-full">
+    <Card className="hud h-full">
       <CardTitle
         right={
           <div className="glass-2 pill flex p-0.5">

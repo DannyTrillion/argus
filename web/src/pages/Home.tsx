@@ -8,7 +8,7 @@ import { StatTile } from "../components/home/StatTile";
 import { HeroChart } from "../components/home/HeroChart";
 import { LiquidationsCard } from "../components/home/Liquidations";
 import { Movers } from "../components/home/Movers";
-import { BriefStories } from "../components/home/BriefStories";
+import { BriefDeck } from "../components/home/BriefDeck";
 import { Card, CardTitle } from "../components/ui/Card";
 import { Gauge } from "../components/ui/Gauge";
 import { Skeleton } from "../components/ui/Skeleton";
@@ -54,12 +54,9 @@ export default function Home() {
         )}
       </motion.div>
 
-      <motion.div {...fade} transition={{ duration: 0.4, delay: 0.1 }} data-tour="brief">
-        <BriefStories />
-      </motion.div>
-
-      <motion.div {...fade} transition={{ duration: 0.4, delay: 0.12 }} data-tour="chart" className="grid gap-4">
-        <HeroChart />
+      <motion.div {...fade} transition={{ duration: 0.4, delay: 0.1 }} className="grid gap-4 lg:grid-cols-3">
+        <div data-tour="chart" className="lg:col-span-2"><HeroChart /></div>
+        <div data-tour="brief" className="min-h-[420px]"><BriefDeck /></div>
       </motion.div>
 
       <motion.div {...fade} transition={{ duration: 0.4, delay: 0.15 }} className="grid gap-4 lg:grid-cols-3">

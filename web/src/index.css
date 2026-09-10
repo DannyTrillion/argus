@@ -73,10 +73,11 @@ body::after {
 }
 
 /* Glow border on hover for interactive cards. */
-.glass { position: relative; transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease; }
+.glass { transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease; }
 .glass-hover:hover { border-color: rgba(231,196,106,0.35); box-shadow: 0 0 0 1px rgba(231,196,106,0.15), 0 24px 60px -30px rgba(231,196,106,0.35), var(--shadow-card); transform: translateY(-1px); }
 
 /* Corner brackets, the "HUD" accent used sparingly on hero panels. */
+.hud { position: relative; }
 .hud::before, .hud::after {
   content: ""; position: absolute; width: 14px; height: 14px; pointer-events: none;
   border-color: rgba(231,196,106,0.55); border-style: solid;
