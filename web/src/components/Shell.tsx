@@ -71,7 +71,7 @@ function SearchBox() {
 export function Shell() {
   return (
     <div className="mx-auto flex min-h-full w-full max-w-[1440px] flex-col overflow-x-hidden px-4 pb-28 pt-4 sm:px-6 md:pb-8 lg:px-8">
-      <header className="mb-6 flex items-center gap-4">
+      <header className="mb-6 flex min-w-0 items-center gap-3 sm:gap-4">
         <Logo />
         <nav className="glass-2 pill mx-auto hidden items-center gap-1 p-1 md:flex">
           {NAV.map((n) => (

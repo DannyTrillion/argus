@@ -43,10 +43,10 @@ export default function Home() {
             <StatTile label="Total market cap" value={usd(g.total_market_cap, { compact: true })} change={g.total_market_cap_yesterday_percentage_change} spark={spark("total_market_cap")} />
             <StatTile label="24h volume" value={usd(g.total_volume_24h, { compact: true })} change={g.total_volume_24h_yesterday_percentage_change} spark={spark("total_volume_24h")} />
             <StatTile label="BTC dominance" value={`${g.btc_dominance.toFixed(2)}%`} change={g.btc_dominance_24h_percentage_change} spark={spark("btc_dominance")} foot={`ETH ${g.eth_dominance.toFixed(1)}%`} />
-            <Card className="flex items-center justify-center">
+            <Card className="flex items-center justify-center p-3 sm:p-5">
               {fg && <Gauge value={fg.value} label={fg.value_classification} color={fg.value > 60 ? "#6fd39c" : fg.value < 40 ? "#ef6f6f" : "#e7c46a"} />}
             </Card>
-            <Card className="col-span-2 flex items-center justify-center lg:col-span-1">
+            <Card className="col-span-2 flex items-center justify-center p-3 sm:p-5 lg:col-span-1">
               {alt && <Gauge value={alt.altcoin_index} label={alt.altcoin_index >= 75 ? "Altcoin season" : alt.altcoin_index <= 25 ? "Bitcoin season" : "Altcoin index"} />}
             </Card>
           </>
