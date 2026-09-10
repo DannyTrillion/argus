@@ -47,3 +47,11 @@ test("pickSectors keeps real sectors, drops taxonomies, one per label, largest w
   const out = pickSectors(cats);
   assert.deepEqual(out.map((s) => [s.name, s.id]), [["Layer 1", "a"], ["Memes", "d"]]);
 });
+
+test("splitFollowups extracts three questions and strips the block", async () => {
+  const { splitFollowups } = await import("../src/agent/agent.ts");
+  const r = splitFollowups("Answer text.\n\n<followups>\n- Why is BTC down?\n- Is it altseason?\n- What about ETH?\n</followups>\n");
+  assert.equal(r.text, "Answer text.");
+  assert.deepEqual(r.followups, ["Why is BTC down?", "Is it altseason?", "What about ETH?"]);
+  assert.deepEqual(splitFollowups("No block here."), { text: "No block here.", followups: [] });
+});

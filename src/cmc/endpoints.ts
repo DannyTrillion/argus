@@ -776,9 +776,17 @@ export async function fearGreedLatest(): Promise<FearGreed> {
   return { value: res.data.value, value_classification: res.data.value_classification, timestamp: res.data.update_time ?? res.data.timestamp };
 }
 
+function toIso(ts: string | number | undefined): string | undefined {
+  if (ts === undefined || ts === null) return undefined;
+  const s = String(ts);
+  if (/^\d{9,13}$/.test(s)) return new Date(Number(s) * (s.length <= 10 ? 1000 : 1)).toISOString();
+  return s;
+}
+
 export async function fearGreedHistorical(limit = 30): Promise<FearGreed[]> {
-  const res = await cmcGet<Array<{ value: number; value_classification: string; timestamp: string }>>("/v3/fear-and-greed/historical", { limit });
-  return res.data.map((d) => ({ value: d.value, value_classification: d.value_classification, timestamp: d.timestamp }));
+  const res = await cmcGet<Array<{ value: number; value_classification: string; timestamp: string | number }>>("/v3/fear-and-greed/historical", { limit });
+  // CMC returns epoch seconds as strings here; normalize to ISO like every other endpoint.
+  return res.data.map((d) => ({ value: d.value, value_classification: d.value_classification, timestamp: toIso(d.timestamp) }));
 }
 
 export interface AltcoinSeason {

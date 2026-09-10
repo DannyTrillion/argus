@@ -1,89 +1,75 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Sparkles, Square, RotateCcw, SendHorizontal, ChevronDown } from "lucide-react";
+import { Sparkles, History as HistoryIcon, ChevronDown } from "lucide-react";
+import { motion } from "motion/react";
 import clsx from "clsx";
-import { useChat, type ChatMessage } from "../lib/chat";
+import { useChat, displayText, type ChatMessage } from "../lib/chat";
 import { Markdown } from "../components/ui/Markdown";
-import type { CallRecord } from "../lib/api";
 import { Mascot } from "../components/ui/Mascot";
-import { AnswerCharts } from "../components/analyst/AnswerCharts";
 import { CopyButton } from "../components/ui/CopyButton";
+import { AnswerCharts } from "../components/analyst/AnswerCharts";
+import { Composer } from "../components/analyst/Composer";
+import { Rail, WorkingSteps, Evidence, HistoryList } from "../components/analyst/Rail";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "../lib/api";
+import { expandMentions, stripMentions } from "../lib/mentions";
 
-const SUGGESTIONS = [
-  "How is the market today?",
-  "Why is SOL moving today?",
-  "Is it altcoin season?",
-  "Which sectors are rotating this week?",
-  "Compare BTC, ETH and SOL risk over 90 days",
-  "What got liquidated in the last 24h?",
-  "Write today's market brief",
+const SUGGESTIONS: Array<{ group: string; items: string[] }> = [
+  { group: "Market", items: ["How is the market today?", "Is it altcoin season?", "Write today's market brief"] },
+  { group: "Coins", items: ["Why is @SOL moving today?", "Where is @BTC relative to its all-time high?", "What is @HYPE and why is it moving?"] },
+  { group: "Risk", items: ["Compare BTC, ETH and SOL risk over 90 days", "What got liquidated in the last 24h?", "How correlated are @ETH and @SOL with BTC?"] },
+  { group: "Sectors", items: ["Which sectors are rotating this week?", "Are memes leading or lagging?", "Is money moving into privacy coins?"] },
 ];
 
-function Steps({ steps }: { steps: ChatMessage["steps"] }) {
-  if (steps.length === 0) return null;
+function Bubble({ m, live, onFollowup, onRetry, compact }: { m: ChatMessage; live: boolean; onFollowup: (q: string) => void; onRetry: () => void; compact: boolean }) {
+  const [showWork, setShowWork] = useState(false);
+  if (m.role === "user") {
+    return <div className="glass-2 ml-auto max-w-[85%] rounded-3xl rounded-br-lg px-4 py-2.5 text-[13.5px] sm:max-w-[75%]">{stripMentions(m.text)}</div>;
+  }
+  const text = displayText(m.text);
   return (
-    <div className="mb-3 flex flex-wrap gap-1.5">
-      {steps.map((s, i) => (
-        <span key={i} title={s.summary} className={clsx("pill inline-flex items-center gap-1.5 px-2.5 py-1 font-mono text-[11px]", s.ok === false ? "bg-down-dim text-down" : s.ok ? "bg-up-dim text-up" : "bg-gold-dim text-gold")}>
-          <span className={clsx("h-1.5 w-1.5 rounded-full", s.ok === undefined ? "animate-pulse bg-gold" : s.ok ? "bg-up" : "bg-down")} />
-          {s.name}
-          {s.ms !== undefined && <span className="opacity-60">{s.ms}ms</span>}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-function Calls({ calls }: { calls: CallRecord[] }) {
-  const [open, setOpen] = useState(false);
-  if (calls.length === 0) return null;
-  const credits = calls.reduce((a, c) => a + c.creditCount, 0);
-  return (
-    <div className="mt-3 border-t border-line pt-2">
-      <button onClick={() => setOpen((o) => !o)} className="flex items-center gap-1.5 font-mono text-[11px] text-ink-3 hover:text-ink">
-        <ChevronDown size={12} className={clsx("transition-transform", open && "rotate-180")} />
-        {calls.length} CoinMarketCap call{calls.length === 1 ? "" : "s"} · {credits} credit{credits === 1 ? "" : "s"}
-      </button>
-      {open && (
-        <div className="mt-2 space-y-1.5">
-          {calls.map((c) => (
-            <details key={c.id} className="glass-2 rounded-xl px-3 py-2 font-mono text-[11px]">
-              <summary className="cursor-pointer list-none">
-                <span className="text-gold">GET</span> <span className="text-ink">{c.endpoint}</span>
-                <span className="text-ink-3">{Object.keys(c.query).length ? "?" + Object.entries(c.query).map(([k, v]) => `${k}=${v}`).join("&") : ""}</span>
-                <span className={clsx("ml-2", c.httpStatus >= 400 ? "text-down" : "text-ink-3")}>{c.httpStatus}</span>
-                <span className="ml-2 text-ink-3">{c.cached ? "cache" : `${c.creditCount} cr · ${c.elapsedMs}ms`}</span>
-              </summary>
-              <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-all text-ink-2">{c.preview}</pre>
-            </details>
-          ))}
+    <div className="glass w-full p-5 sm:p-6">
+      {/* On phones the rail is hidden, so the working state lives inside the answer. */}
+      {compact && (live || m.steps.length > 0) && (
+        <div className="mb-4">
+          {live ? (
+            <WorkingSteps m={m} live />
+          ) : (
+            <>
+              <button onClick={() => setShowWork((o) => !o)} className="flex items-center gap-1.5 font-mono text-[11px] text-ink-3 hover:text-ink">
+                <ChevronDown size={12} className={clsx("transition-transform", showWork && "rotate-180")} /> {m.steps.length} step{m.steps.length === 1 ? "" : "s"} · {m.calls.length} API call{m.calls.length === 1 ? "" : "s"}
+              </button>
+              {showWork && <div className="mt-2 space-y-3"><WorkingSteps m={m} live={false} /><Evidence m={m} /></div>}
+            </>
+          )}
         </div>
       )}
-    </div>
-  );
-}
-
-function Bubble({ m }: { m: ChatMessage }) {
-  if (m.role === "user") {
-    return <div className="glass-2 ml-auto max-w-[80%] rounded-3xl rounded-br-lg px-4 py-2.5 text-[13.5px]">{m.text}</div>;
-  }
-  return (
-    <div className="glass max-w-[920px] p-5">
-      <Steps steps={m.steps} />
-      {!m.text && !m.done && (
+      {!text && !m.done && (
         <div className="flex items-center gap-3 text-[12.5px] text-ink-3">
           <Mascot size={40} thinking />
           {m.thinking ? <span className="italic">{m.thinking.slice(-220)}</span> : "Reading the market…"}
         </div>
       )}
-      {m.text && <Markdown text={m.text} />}
-      {m.done && <AnswerCharts steps={m.steps} />}
-      {m.error && <div className="mt-2 text-[12.5px] text-down">{m.error}</div>}
-      <Calls calls={m.calls} />
+      {text && <Markdown text={text} className="text-[14px] [&_h2]:text-[16px] [&_h3]:text-[15px]" />}
+      {live && text && <span className="ml-0.5 inline-block h-4 w-[2px] animate-pulse bg-gold align-middle" />}
+      {m.done && compact && <AnswerCharts steps={m.steps} />}
+      {m.error && (
+        <div className="mt-2 flex flex-wrap items-center gap-3 text-[12.5px]">
+          <span className="text-down">{m.error}</span>
+          <button onClick={onRetry} className="pill bg-surface-2 px-3 py-1 text-[12px] text-ink hover:bg-gold hover:text-bg">Try again</button>
+        </div>
+      )}
+      {m.done && m.followups && m.followups.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mt-5 flex flex-wrap gap-2">
+          {m.followups.map((q) => (
+            <button key={q} onClick={() => onFollowup(q)} className="glass-2 pill px-3 py-1.5 text-left text-[12.5px] text-ink-2 hover:border-gold/40 hover:text-ink">{q}</button>
+          ))}
+        </motion.div>
+      )}
       {m.usage && (
-        <div className="mt-2 flex items-center justify-between gap-3 font-mono text-[10.5px] text-ink-3">
-          <span>tokens in {m.usage.input_tokens.toLocaleString()} · out {m.usage.output_tokens.toLocaleString()}{m.usage.cache_read_input_tokens ? ` · cache ${m.usage.cache_read_input_tokens.toLocaleString()}` : ""}</span>
-          {m.text && <CopyButton text={m.text} />}
+        <div className="mt-4 flex items-center justify-between gap-3 border-t border-line pt-3 font-mono text-[10.5px] text-ink-3">
+          <span>{m.calls.length} API call{m.calls.length === 1 ? "" : "s"} · {m.calls.reduce((a, c) => a + c.creditCount, 0)} credits · tokens {m.usage.input_tokens.toLocaleString()}/{m.usage.output_tokens.toLocaleString()}</span>
+          <CopyButton text={text} />
         </div>
       )}
     </div>
@@ -91,85 +77,103 @@ function Bubble({ m }: { m: ChatMessage }) {
 }
 
 export default function Analyst() {
-  const chat = useChat();
-  const [input, setInput] = useState("");
   const [params, setParams] = useSearchParams();
+  const chat = useChat(params.get("c"));
+  const coins = useQuery({ queryKey: ["coins", 200], queryFn: () => api.coins(200), staleTime: 60_000 });
+  const ask = (q: string) => chat.send(expandMentions(q, coins.data?.coins));
+  const [histOpen, setHistOpen] = useState(false);
   const bottom = useRef<HTMLDivElement>(null);
   const started = useRef(false);
+  const [pinned, setPinned] = useState(true);
 
+  // ?q= from the deck, coin pages and the palette.
   useEffect(() => {
     const q = params.get("q");
     if (q && !started.current) {
       started.current = true;
-      chat.send(q);
+      ask(q);
       setParams({}, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Stay pinned to the bottom while streaming unless the reader scrolls up.
   useEffect(() => {
-    if (chat.messages.length > 0) bottom.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [chat.messages]);
+    const onScroll = () => {
+      const gap = document.documentElement.scrollHeight - window.innerHeight - window.scrollY;
+      setPinned(gap < 120);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  const lastText = chat.messages[chat.messages.length - 1]?.text;
+  useEffect(() => {
+    if (chat.messages.length > 0 && pinned) bottom.current?.scrollIntoView({ block: "end" });
+  }, [chat.messages.length, lastText, pinned]);
 
-  const submit = () => {
-    const q = input.trim();
-    if (!q) return;
-    setInput("");
-    chat.send(q);
-  };
+  const latest = [...chat.messages].reverse().find((m) => m.role === "assistant") ?? null;
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 1024;
 
   return (
-    <div className="flex min-h-[calc(100vh-140px)] flex-col">
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-1.5 text-[13px] text-gold"><Sparkles size={13} /> Live analyst</div>
-          <h1 className="font-display mt-1 text-[30px] font-light leading-tight tracking-tight sm:text-[34px]">Ask Argus</h1>
+    <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="flex min-h-[calc(100vh-160px)] min-w-0 flex-col">
+        <div className="mb-4 flex items-end justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 text-[13px] text-gold"><Sparkles size={13} /> Live analyst</div>
+            <h1 className="font-display mt-1 truncate text-[24px] font-light leading-tight tracking-tight sm:text-[34px]">{chat.messages.length ? stripMentions(chat.conversation.title) : "Ask Argus"}</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setHistOpen((o) => !o)} className="glass-2 pill flex items-center gap-1.5 px-3 py-1.5 text-[12px] text-ink-2 hover:text-ink lg:hidden"><HistoryIcon size={13} /> History</button>
+            {chat.messages.length > 0 && (
+              <button onClick={chat.reset} className="glass-2 pill flex items-center gap-1.5 px-3 py-1.5 text-[12px] text-ink-2 hover:text-ink"><Sparkles size={12} /> New</button>
+            )}
+          </div>
         </div>
-        {chat.messages.length > 0 && (
-          <button onClick={chat.reset} className="glass-2 pill flex items-center gap-1.5 px-3 py-1.5 text-[12px] text-ink-2 hover:text-ink"><RotateCcw size={12} /> New conversation</button>
-        )}
-      </div>
 
-      <div className="flex-1 space-y-4">
-        {chat.messages.length === 0 && (
-          <div className="glass hud p-8">
-            <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center">
-              <Mascot size={128} className="scan rounded-full" />
-              <div>
-                <div className="font-display text-[24px] font-light">Every number, <span className="text-glow">sourced live.</span></div>
-                <p className="mt-2 max-w-[640px] text-[13.5px] leading-relaxed text-ink-2">
-                  Ask me about a coin, a sector, or the whole market. I decide which CoinMarketCap endpoints answer it, call them, compute what the API does not provide (volatility, drawdown, correlation, rotation), and show you every call I made.
-                </p>
+        {histOpen && (
+          <div className="glass mb-4 p-3 lg:hidden"><HistoryList activeId={chat.conversation.id} onOpen={(id) => { chat.open(id); setHistOpen(false); }} onNew={() => { chat.reset(); setHistOpen(false); }} /></div>
+        )}
+
+        <div className="flex-1 space-y-4">
+          {chat.messages.length === 0 && (
+            <div className="glass hud p-6 sm:p-8">
+              <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center">
+                <Mascot size={112} className="scan rounded-full" />
+                <div>
+                  <div className="font-display text-[24px] font-light">Every number, <span className="text-glow">sourced live.</span></div>
+                  <p className="mt-2 max-w-[600px] text-[13.5px] leading-relaxed text-ink-2">
+                    Ask about a coin, a sector, or the whole market. I choose the CoinMarketCap endpoints, compute what the API does not provide, and show every call I made. Type @ to mention a coin.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                {SUGGESTIONS.map((g) => (
+                  <div key={g.group}>
+                    <div className="mb-2 text-[11px] uppercase tracking-wider text-ink-3">{g.group}</div>
+                    <div className="flex flex-wrap gap-2">
+                      {g.items.map((s) => (
+                        <button key={s} onClick={() => ask(s)} className="glass-2 pill px-3 py-1.5 text-left text-[12.5px] text-ink-2 hover:border-gold/40 hover:text-ink">{s}</button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-            <div className="mt-5 flex flex-wrap gap-2">
-              {SUGGESTIONS.map((s) => (
-                <button key={s} onClick={() => chat.send(s)} className="glass-2 pill px-3.5 py-2 text-[12.5px] text-ink-2 hover:border-gold/40 hover:text-ink">{s}</button>
-              ))}
-            </div>
-          </div>
-        )}
-        {chat.messages.map((m, i) => <div key={i} className="flex"><Bubble m={m} /></div>)}
-        <div ref={bottom} />
-      </div>
-
-      <div className="sticky mt-5 md:bottom-4" style={{ bottom: "calc(96px + env(safe-area-inset-bottom))" }}>
-        <div className="glass flex items-end gap-2 p-2 pl-4">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }}
-            placeholder="Ask about any coin, sector, or the whole market"
-            rows={1}
-            className="max-h-40 min-h-[40px] flex-1 resize-none bg-transparent py-2 text-[14px] placeholder:text-ink-3 focus:outline-none"
-          />
-          {chat.busy ? (
-            <button onClick={chat.stop} className="glass-2 flex h-10 w-10 items-center justify-center rounded-full text-ink-2 hover:text-ink" aria-label="Stop"><Square size={14} /></button>
-          ) : (
-            <button onClick={submit} disabled={!input.trim()} className="flex h-10 w-10 items-center justify-center rounded-full bg-gold text-bg hover:bg-gold-2 disabled:opacity-40" aria-label="Send"><SendHorizontal size={16} /></button>
           )}
+          {chat.messages.map((m, i) => (
+            <div key={i} className="flex">
+              <Bubble m={m} live={chat.busy && i === chat.messages.length - 1} onFollowup={ask} onRetry={chat.retry} compact={isMobile} />
+            </div>
+          ))}
+          <div ref={bottom} />
+        </div>
+
+        <div className="sticky mt-5 md:bottom-4" style={{ bottom: "calc(96px + env(safe-area-inset-bottom))" }}>
+          <Composer busy={chat.busy} onSend={chat.send} onStop={chat.stop} autoFocus={chat.messages.length === 0 && !isMobile} />
         </div>
       </div>
+
+      <Rail latest={latest} busy={chat.busy} activeId={chat.conversation.id} onOpen={chat.open} onNew={chat.reset} />
     </div>
   );
 }

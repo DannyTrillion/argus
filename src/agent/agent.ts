@@ -5,7 +5,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { BetaMessageParam } from "@anthropic-ai/sdk/resources/beta/messages";
 import { config } from "../config.js";
-import { onCall, type CallRecord } from "../cmc/http.js";
+import { onCall, callContext, type CallRecord } from "../cmc/http.js";
 import { SYSTEM_PROMPT } from "./prompt.js";
 import { createTools, type ToolEvent } from "./tools.js";
 
@@ -15,7 +15,7 @@ export type AgentEvent =
   | { type: "tool_call"; id: string; name: string; input: unknown }
   | { type: "tool_result"; name: string; ok: boolean; ms: number; summary: string; data?: unknown }
   | { type: "api_call"; record: CallRecord }
-  | { type: "done"; text: string; usage: { input_tokens: number; output_tokens: number; cache_read_input_tokens: number | null } }
+  | { type: "done"; text: string; followups: string[]; usage: { input_tokens: number; output_tokens: number; cache_read_input_tokens: number | null } }
   | { type: "error"; message: string };
 
 export interface RunOptions {
@@ -44,9 +44,17 @@ function todayBlock(): string {
 }
 
 export async function runAgent(opts: RunOptions): Promise<RunResult> {
+  const runId = crypto.randomUUID();
+  return callContext.run({ runId }, () => runAgentInner(opts, runId));
+}
+
+async function runAgentInner(opts: RunOptions, runId: string): Promise<RunResult> {
   const { onEvent } = opts;
   const tools = createTools((e: ToolEvent) => onEvent({ type: "tool_result", ...e }));
-  const unsubscribe = onCall((record) => onEvent({ type: "api_call", record }));
+  // Only surface calls made by this run; other requests to the server keep their own tags.
+  const unsubscribe = onCall((record) => {
+    if (record.runId === runId) onEvent({ type: "api_call", record });
+  });
 
   try {
     const runner = getClient().beta.messages.toolRunner(
@@ -81,13 +89,16 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
     }
 
     const final = await runner.done();
-    finalText = final.content
+    const rawText = final.content
       .filter((b): b is Extract<typeof b, { type: "text" }> => b.type === "text")
       .map((b) => b.text)
       .join("");
+    const { text, followups } = splitFollowups(rawText);
+    finalText = text;
     onEvent({
       type: "done",
       text: finalText,
+      followups,
       usage: {
         input_tokens: final.usage.input_tokens,
         output_tokens: final.usage.output_tokens,
@@ -104,8 +115,21 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
   }
 }
 
+/** Pull the trailing <followups> block out of an answer. Tolerates a missing or malformed block. */
+export function splitFollowups(raw: string): { text: string; followups: string[] } {
+  const m = raw.match(/<followups>([\s\S]*?)<\/followups>\s*$/i);
+  if (!m) return { text: raw.trim(), followups: [] };
+  const followups = m[1]
+    .split(/\r?\n/)
+    .map((l) => l.replace(/^\s*[-*\d.)]+\s*/, "").trim())
+    .filter((l) => l.length > 3)
+    .slice(0, 3);
+  return { text: raw.slice(0, m.index).trim(), followups };
+}
+
 export function describeError(err: unknown): string {
   if (err instanceof Anthropic.AuthenticationError) return "Anthropic API key is missing or invalid (set ANTHROPIC_API_KEY).";
+  if (err instanceof Anthropic.APIConnectionError) return "Could not reach the Anthropic API. Check the connection and try again.";
   if (err instanceof Anthropic.RateLimitError) return "Anthropic rate limit hit. Try again in a moment.";
   if (err instanceof Anthropic.APIError) return `Anthropic API error ${err.status}: ${err.message}`;
   if (err instanceof Error) return err.message;

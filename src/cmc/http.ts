@@ -8,7 +8,11 @@
  *  - keep a short in-memory cache so repeated agent tool calls do not burn credits
  *  - record every real call (endpoint, status, credits) for the "evidence" panel
  */
+import { AsyncLocalStorage } from "node:async_hooks";
 import { config } from "../config.js";
+
+/** Tags every CMC call made inside an agent run so listeners can filter to their own run. */
+export const callContext = new AsyncLocalStorage<{ runId: string }>();
 
 export interface CmcStatus {
   timestamp: string;
@@ -39,6 +43,8 @@ export class CmcApiError extends Error {
 /** One recorded API call. Kept in memory and exposed to the UI as proof of live data. */
 export interface CallRecord {
   id: number;
+  /** Agent run that triggered this call, if any. */
+  runId?: string;
   endpoint: string;
   query: Record<string, string>;
   httpStatus: number;
@@ -87,8 +93,8 @@ interface CacheEntry {
 }
 const cache = new Map<string, CacheEntry>();
 
-function record(partial: Omit<CallRecord, "id" | "at">): CallRecord {
-  const rec: CallRecord = { id: nextId++, at: new Date().toISOString(), ...partial };
+function record(partial: Omit<CallRecord, "id" | "at" | "runId">): CallRecord {
+  const rec: CallRecord = { id: nextId++, at: new Date().toISOString(), runId: callContext.getStore()?.runId, ...partial };
   callLog.push(rec);
   if (callLog.length > 500) callLog.shift();
   for (const l of listeners) l(rec);

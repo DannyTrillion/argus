@@ -30,12 +30,24 @@ const app = new Hono();
 app.route("/api", api);
 
 app.post("/api/chat", async (c) => {
-  const body = (await c.req.json().catch(() => ({}))) as { sessionId?: string; message?: string };
+  const body = (await c.req.json().catch(() => ({}))) as {
+    sessionId?: string;
+    message?: string;
+    /** Optional transcript from the client, used to rebuild context if this server no longer has the session. */
+    history?: Array<{ role: "user" | "assistant"; text: string }>;
+  };
   const sessionId = (body.sessionId ?? "").trim() || crypto.randomUUID();
   const message = (body.message ?? "").trim();
   if (!message) return c.json({ error: "message is required" }, 400);
 
-  const history = sessions.get(sessionId) ?? [];
+  let history = sessions.get(sessionId);
+  if (!history && Array.isArray(body.history) && body.history.length) {
+    history = body.history
+      .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.text === "string" && m.text.trim())
+      .slice(-MAX_HISTORY_MESSAGES)
+      .map((m) => ({ role: m.role, content: m.text }));
+  }
+  history ??= [];
   const messages: BetaMessageParam[] = [...history, { role: "user", content: message }];
 
   return streamSSE(c, async (stream) => {
