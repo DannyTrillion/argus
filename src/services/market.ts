@@ -87,21 +87,23 @@ const SECTORS: Array<{ label: string; match: RegExp }> = [
   { label: "Yield", match: /^yield farming$|^yield aggregator/i },
 ];
 
+/** Pure: pick one category per curated sector label, largest by market cap. Exported for tests. */
+export function pickSectors(all: cmc.Category[]): Array<cmc.Category & { label: string }> {
+  const picked = new Map<string, cmc.Category & { label: string }>();
+  for (const c of all) {
+    if (!(c.market_cap && c.market_cap > 0) || (c.num_tokens ?? 0) < 3) continue;
+    const hit = SECTORS.find((s) => s.match.test(c.name));
+    if (!hit) continue;
+    const cur = picked.get(hit.label);
+    if (!cur || (c.market_cap ?? 0) > (cur.market_cap ?? 0)) picked.set(hit.label, { ...c, label: hit.label });
+  }
+  return [...picked.values()]
+    .sort((a, b) => (b.market_cap ?? 0) - (a.market_cap ?? 0))
+    .map((c) => ({ ...c, name: c.label }));
+}
+
 export function sectors() {
-  return memo("sectors", 5 * MINUTE, async () => {
-    const all = await cmc.categories({ limit: 500 });
-    const picked = new Map<string, cmc.Category & { label: string }>();
-    for (const c of all) {
-      if (!(c.market_cap && c.market_cap > 0) || (c.num_tokens ?? 0) < 3) continue;
-      const hit = SECTORS.find((s) => s.match.test(c.name));
-      if (!hit) continue;
-      const cur = picked.get(hit.label);
-      if (!cur || (c.market_cap ?? 0) > (cur.market_cap ?? 0)) picked.set(hit.label, { ...c, label: hit.label });
-    }
-    return [...picked.values()]
-      .sort((a, b) => (b.market_cap ?? 0) - (a.market_cap ?? 0))
-      .map((c) => ({ ...c, name: c.label }));
-  });
+  return memo("sectors", 5 * MINUTE, async () => pickSectors(await cmc.categories({ limit: 500 })));
 }
 
 export interface CoinRow extends cmc.Coin {

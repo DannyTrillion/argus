@@ -64,7 +64,7 @@ export interface Coin {
 
 
 type RawQuoteMap = Record<string, Quote & { symbol?: string }> | Array<Quote & { symbol?: string }>;
-interface RawCoin extends Omit<Coin, "quote" | "tags"> {
+export interface RawCoin extends Omit<Coin, "quote" | "tags"> {
   quote: RawQuoteMap;
   tags?: Array<string | { name?: string; slug?: string }>;
 }
@@ -75,9 +75,9 @@ const CONVERT = "USD";
 function num(v: number | null | undefined, kind: "pct" | "usd" | "raw" = "raw"): number | null {
   if (v === null || v === undefined || !Number.isFinite(v)) return null;
   if (kind === "pct") return Math.round(v * 100) / 100;
-  if (Math.abs(v) >= 1000) return Math.round(v);
-  if (Math.abs(v) >= 1) return Math.round(v * 10000) / 10000;
-  return Number(v.toPrecision(5));
+  if (Math.abs(v) >= 1e6) return Math.round(v); // caps, volumes, supplies
+  if (Math.abs(v) >= 1) return Math.round(v * 10000) / 10000; // prices keep cents and a bit
+  return Number(v.toPrecision(5)); // sub-dollar prices keep significant digits
 }
 
 /** CMC v2 returns quote as a map keyed by currency; v3 may return an array. Handle both. */
@@ -115,7 +115,7 @@ function pickQuote(raw: RawQuoteMap | undefined): Quote {
 /** Tags that describe what a project is, as opposed to which VC portfolio lists it. */
 const NOISY_TAG = /portfolio|ecosystem|launchpad|-chain$|^bnb|^binance|alameda|paradigm|pantera|coinbase|multicoin|a16z|dragonfly|polychain|sequoia|placeholder|dcg|galaxy|estate|reserve|taxonomy|sec-cftc|made-in|winklevoss|alt-season|commodit|labs$|ventures|capital/i;
 
-function normalizeCoin(raw: RawCoin): Coin {
+export function normalizeCoin(raw: RawCoin): Coin {
   // v3 endpoints return tag objects, v1/v2 return slug strings. Normalize to slugs so
   // tags compare equal across endpoints (used for related-coin matching).
   const tags = raw.tags
@@ -139,7 +139,7 @@ function normalizeCoin(raw: RawCoin): Coin {
 }
 
 /** Flatten whatever container CMC used (array, id-keyed map, or symbol-keyed map of arrays). */
-function coinsFrom(data: unknown): Coin[] {
+export function coinsFrom(data: unknown): Coin[] {
   if (Array.isArray(data)) return (data as RawCoin[]).map(normalizeCoin);
   if (data && typeof data === "object") {
     const out: Coin[] = [];
@@ -256,7 +256,7 @@ export async function listings(opts: {
  * Keep the best-ranked active asset per symbol, which is what a user means
  * when they type "SOL". Ids and slugs are already unique, so they pass through.
  */
-function bestPerSymbol(coins: Coin[], raw: unknown): Coin[] {
+export function bestPerSymbol(coins: Coin[], raw: unknown): Coin[] {
   const active = new Set<number>();
   if (Array.isArray(raw)) for (const r of raw as Array<{ id: number; is_active?: number }>) if (r.is_active !== 0) active.add(r.id);
   const best = new Map<string, Coin>();

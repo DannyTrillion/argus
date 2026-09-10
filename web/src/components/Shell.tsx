@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { api } from "../lib/api";
 import { Tour, useTour } from "./Tour";
 import { Mascot } from "./ui/Mascot";
+import { Palette, usePalette } from "./Palette";
 
 const NAV = [
   { to: "/", label: "Home", icon: LayoutGrid, end: true },
@@ -54,7 +55,7 @@ function SearchBox() {
           onChange={(e) => { setQ(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
           onKeyDown={(e) => { if (e.key === "Enter" && results[0]) { nav(`/coin/${results[0].id}`); setOpen(false); setQ(""); } }}
-          placeholder="Search a coin  /"
+          placeholder="Search  /  or ⌘K"
           className="w-full min-w-0 bg-transparent text-[13px] text-ink placeholder:text-ink-3 focus:outline-none"
         />
       </div>
@@ -78,9 +79,11 @@ function SearchBox() {
 
 export function Shell() {
   const tour = useTour();
+  const palette = usePalette();
   return (
     <div className="mx-auto flex min-h-full w-full max-w-[1440px] flex-col overflow-x-hidden px-4 pb-28 pt-4 sm:px-6 md:pb-8 lg:px-8">
-      <Tour open={tour.open} onClose={tour.finish} />
+      <Tour open={tour.open && !palette.open} onClose={tour.finish} />
+      <Palette open={palette.open} onClose={() => palette.setOpen(false)} />
       <header className="mb-6 flex min-w-0 items-center gap-3 sm:gap-4">
         <Logo />
         <nav data-tour="nav" className="glass-2 pill mx-auto hidden items-center gap-1 p-1 md:flex">
