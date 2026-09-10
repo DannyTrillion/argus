@@ -6,10 +6,9 @@ import { api } from "../lib/api";
 import { usd, pct, greeting, dateLabel, timeAgo } from "../lib/format";
 import { StatTile } from "../components/home/StatTile";
 import { HeroChart } from "../components/home/HeroChart";
-import { SectorMap } from "../components/home/SectorMap";
 import { LiquidationsCard } from "../components/home/Liquidations";
 import { Movers } from "../components/home/Movers";
-import { BriefCard } from "../components/home/BriefCard";
+import { BriefStories } from "../components/home/BriefStories";
 import { Card, CardTitle } from "../components/ui/Card";
 import { Gauge } from "../components/ui/Gauge";
 import { Skeleton } from "../components/ui/Skeleton";
@@ -55,21 +54,20 @@ export default function Home() {
         )}
       </motion.div>
 
-      <motion.div {...fade} transition={{ duration: 0.4, delay: 0.1 }} data-tour="brief" className="grid gap-4 lg:grid-cols-3">
-        <BriefCard />
+      <motion.div {...fade} transition={{ duration: 0.4, delay: 0.1 }} data-tour="brief">
+        <BriefStories />
       </motion.div>
 
-      <motion.div {...fade} transition={{ duration: 0.4, delay: 0.12 }} className="grid gap-4">
+      <motion.div {...fade} transition={{ duration: 0.4, delay: 0.12 }} data-tour="chart" className="grid gap-4">
         <HeroChart />
       </motion.div>
 
       <motion.div {...fade} transition={{ duration: 0.4, delay: 0.15 }} className="grid gap-4 lg:grid-cols-3">
-        <div data-tour="sectors" className="lg:col-span-2"><SectorMap /></div>
+        <Movers />
         <LiquidationsCard data={overview.data?.liquidations} />
       </motion.div>
 
-      <motion.div {...fade} transition={{ duration: 0.4, delay: 0.2 }} className="grid gap-4 lg:grid-cols-3">
-        <Movers />
+      <motion.div {...fade} transition={{ duration: 0.4, delay: 0.2 }} className="grid gap-4">
         <Card className="flex flex-col justify-between" data-tour="ask-card">
           <div>
             <CardTitle>Ask the analyst</CardTitle>

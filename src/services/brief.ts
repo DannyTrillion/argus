@@ -18,7 +18,7 @@ export interface Brief {
 }
 
 const PROMPT =
-  "Write today's crypto market brief for a reader who checks the market once a day. Use these headings exactly: Market backdrop, Movers that matter, Sector rotation, Leverage and risk, Watch list. Keep it under 350 words. Every number must come from the tools. No preamble, start with the first heading.";
+  "Write today's crypto market brief as five short sections with these exact markdown headings: ## Market backdrop, ## Movers that matter, ## Sector rotation, ## Leverage and risk, ## Watch list. Each section is at most 45 words: two or three tight sentences, or for Watch list three bullets of one line each. Lead every section with the single most important number. No preamble, no closing line, no headings other than these five. Every number must come from the tools.";
 
 const REFRESH_MS = Number(process.env.BRIEF_REFRESH_MINUTES ?? 240) * 60_000;
 const CACHE_FILE = process.env.BRIEF_CACHE_FILE ?? ".cache/brief.json";

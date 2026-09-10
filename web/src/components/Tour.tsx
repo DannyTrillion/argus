@@ -36,13 +36,13 @@ const STEPS: Step[] = [
   {
     target: ["brief"],
     title: "A brief nobody had to ask for",
-    body: "Every four hours the agent reads the market through a dozen API calls and writes this. Backdrop, movers, sector rotation, leverage, watch list.",
+    body: "Every four hours the agent reads the market through a dozen API calls and writes five cards: backdrop, movers, sector rotation, leverage, watch list. Swipe or let it play.",
     route: "/",
   },
   {
-    target: ["sectors"],
-    title: "Where the money is rotating",
-    body: "Sectors sized by market cap and coloured by 24h change. Green is bid, red is offered. Hover a block for volume change and token count.",
+    target: ["chart"],
+    title: "The big picture",
+    body: "Total market cap against BTC dominance over 30, 90 or 365 days. When dominance falls while cap rises, money is flowing into alts.",
     route: "/",
   },
   {
