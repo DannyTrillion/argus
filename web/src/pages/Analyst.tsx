@@ -108,7 +108,7 @@ export default function Analyst() {
   }, []);
 
   useEffect(() => {
-    bottom.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    if (chat.messages.length > 0) bottom.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [chat.messages]);
 
   const submit = () => {
@@ -123,7 +123,7 @@ export default function Analyst() {
       <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-1.5 text-[13px] text-gold"><Sparkles size={13} /> Live analyst</div>
-          <h1 className="font-display mt-1 text-[34px] font-light leading-tight tracking-tight">Ask Argus</h1>
+          <h1 className="font-display mt-1 text-[30px] font-light leading-tight tracking-tight sm:text-[34px]">Ask Argus</h1>
         </div>
         {chat.messages.length > 0 && (
           <button onClick={chat.reset} className="glass-2 pill flex items-center gap-1.5 px-3 py-1.5 text-[12px] text-ink-2 hover:text-ink"><RotateCcw size={12} /> New conversation</button>
@@ -153,7 +153,7 @@ export default function Analyst() {
         <div ref={bottom} />
       </div>
 
-      <div className="sticky bottom-20 mt-5 md:bottom-4">
+      <div className="sticky mt-5 md:bottom-4" style={{ bottom: "calc(96px + env(safe-area-inset-bottom))" }}>
         <div className="glass flex items-end gap-2 p-2 pl-4">
           <textarea
             value={input}

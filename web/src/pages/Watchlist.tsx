@@ -125,22 +125,26 @@ export default function Watchlist() {
             {rows.map((c) => {
               const on = selected.includes(c.id);
               return (
-                <div key={c.id} className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2">
+                <div key={c.id} className="flex items-center gap-2.5 px-3 py-3 hover:bg-surface-2 sm:gap-3 sm:px-4">
                   <button
                     onClick={() => setSelected((s) => (on ? s.filter((x) => x !== c.id) : s.length < 6 ? [...s, c.id] : s))}
-                    className={clsx("h-4 w-4 rounded border", on ? "border-gold bg-gold" : "border-line-2")}
+                    className={clsx("h-4 w-4 shrink-0 rounded border", on ? "border-gold bg-gold" : "border-line-2")}
                     aria-label="Select for comparison"
                   />
-                  <img src={`https://s2.coinmarketcap.com/static/img/coins/32x32/${c.id}.png`} alt="" className="h-7 w-7 rounded-full bg-surface-2" />
+                  <img src={`https://s2.coinmarketcap.com/static/img/coins/32x32/${c.id}.png`} alt="" className="h-7 w-7 shrink-0 rounded-full bg-surface-2" />
                   <Link to={`/coin/${c.id}`} className="min-w-0 flex-1">
-                    <div className="text-[13.5px] font-medium">{c.name} <span className="text-ink-3">{c.symbol}</span></div>
-                    <div className="font-mono text-[11px] text-ink-3">cap {usd(c.quote.market_cap, { compact: true })} · vol {usd(c.quote.volume_24h, { compact: true })}</div>
+                    <div className="truncate text-[13.5px] font-medium">{c.name} <span className="text-ink-3">{c.symbol}</span></div>
+                    <div className="truncate font-mono text-[11px] text-ink-3">{usd(c.quote.market_cap, { compact: true })} · {usd(c.quote.volume_24h, { compact: true })} vol</div>
                   </Link>
-                  <div className="hidden sm:block"><Sparkline data={c.sparkline} width={110} height={30} /></div>
-                  <div className="w-[90px] text-right font-mono text-[13px]">{usd(c.quote.price)}</div>
-                  <div className="w-[70px] text-right"><Change value={c.quote.percent_change_24h} className="text-[12.5px]" /></div>
-                  <div className="hidden w-[70px] text-right sm:block"><Change value={c.quote.percent_change_7d} className="text-[12.5px]" /></div>
-                  <button onClick={() => wl.toggle(c.id)} className="ml-1 text-ink-3 hover:text-down" aria-label="Remove"><X size={14} /></button>
+                  <div className="hidden md:block"><Sparkline data={c.sparkline} width={110} height={30} /></div>
+                  <div className="shrink-0 text-right">
+                    <div className="font-mono text-[13px]">{usd(c.quote.price)}</div>
+                    <div className="flex justify-end gap-2">
+                      <Change value={c.quote.percent_change_24h} className="text-[11.5px]" />
+                      <Change value={c.quote.percent_change_7d} className="hidden text-[11.5px] sm:inline" />
+                    </div>
+                  </div>
+                  <button onClick={() => wl.toggle(c.id)} className="ml-0.5 shrink-0 text-ink-3 hover:text-down" aria-label="Remove"><X size={14} /></button>
                 </div>
               );
             })}

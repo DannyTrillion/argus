@@ -52,7 +52,7 @@ const STEPS: Step[] = [
     route: "/",
   },
   {
-    target: ["ask", "ask-card"],
+    target: ["ask", "nav-mobile", "ask-card"],
     title: "Ask anything, see the evidence",
     body: "Try \"Why is SOL moving today?\" The analyst chooses the endpoints, computes volatility and correlation the API does not provide, and lists every call it made.",
     route: "/",
