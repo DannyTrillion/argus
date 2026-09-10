@@ -69,10 +69,11 @@ export function BriefDeck({ className }: { className?: string }) {
   const n = slides.length;
 
   const [i, setI] = useState(0);
+  const [prevIdx, setPrevIdx] = useState<number | null>(null);
   const [hover, setHover] = useState(false);
   useEffect(() => {
     if (hover || n < 2) return;
-    const t = setInterval(() => setI((x) => (x + 1) % n), STEP_MS);
+    const t = setInterval(() => setI((x) => { setPrevIdx(x); return (x + 1) % n; }), STEP_MS);
     return () => clearInterval(t);
   }, [hover, n]);
 
@@ -159,25 +160,33 @@ export function BriefDeck({ className }: { className?: string }) {
 
   return (
     <div
-      className={clsx("relative h-full min-h-[540px] lg:min-h-[420px]", className)}
+      className={clsx("relative h-full min-h-[540px] overflow-hidden rounded-[22px] lg:min-h-[420px]", className)}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       aria-roledescription="carousel"
     >
       {slides.map((s, k) => {
         const active = k === i;
-        const prev = k === (i - 1 + n) % n;
+        const leaving = k === prevIdx && !active;
         const a = ACCENT[s.topic.accent];
+        // Stack transition: the incoming card slides up from below and covers the current one,
+        // which sinks back and dims underneath. Idle cards wait just below the frame.
         return (
           <motion.button
             key={s.topic.key}
             type="button"
             onClick={() => nav(`/analyst?q=${encodeURIComponent(s.topic.question)}`)}
             initial={false}
-            animate={{ y: active ? 0 : prev ? -28 : 28, opacity: active ? 1 : 0, scale: active ? 1 : 0.985 }}
-            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            animate={active ? { y: 0, scale: 1, opacity: 1 } : leaving ? { y: -18, scale: 0.94, opacity: 0.45 } : { y: "104%", scale: 1, opacity: 1 }}
+            transition={active ? { type: "spring", stiffness: 150, damping: 24, mass: 0.9 } : { duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
             className={clsx("glass absolute inset-0 block cursor-pointer overflow-hidden p-0 text-left", !active && "pointer-events-none")}
-            style={{ boxShadow: "0 0 0 1px rgba(231,196,106,0.14), 0 1px 0 rgba(255,255,255,0.05) inset, 0 24px 60px -36px rgba(0,0,0,0.9)", zIndex: active ? 2 : 1 }}
+            style={{
+              boxShadow: active
+                ? "0 0 0 1px rgba(231,196,106,0.14), 0 1px 0 rgba(255,255,255,0.05) inset, 0 -18px 50px -20px rgba(0,0,0,0.85), 0 24px 60px -36px rgba(0,0,0,0.9)"
+                : "0 0 0 1px rgba(231,196,106,0.10)",
+              zIndex: active ? 3 : leaving ? 2 : 1,
+              transformOrigin: "50% 100%",
+            }}
             tabIndex={active ? 0 : -1}
             aria-hidden={!active}
           >
