@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Argus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/15.0.12/marked.min.js"></script>
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --panel-2: #1c2129; --border: #2a313b;
+    --text: #e6edf3; --muted: #8b949e; --accent: #3fb950; --accent-2: #58a6ff; --danger: #f85149; --warn: #d29922;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; }
+  .app { display: grid; grid-template-columns: minmax(0, 1fr) 380px; height: 100%; }
+  @media (max-width: 900px) { .app { grid-template-columns: 1fr; } .side { display: none; } }
+  header { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border); }
+  header .logo { width: 28px; height: 28px; border-radius: 8px; background: radial-gradient(circle at 30% 30%, #58a6ff, #1f6feb 60%, #0d419d); }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+  header .sub { color: var(--muted); font-size: 12px; }
+  header .spacer { flex: 1; }
+  header button { background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+  header button:hover { color: var(--text); border-color: var(--muted); }
+  main { display: flex; flex-direction: column; min-width: 0; height: 100%; }
+  .thread { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 18px; }
+  .msg { max-width: 860px; }
+  .msg.user { align-self: flex-end; background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; }
+  .msg.assistant { align-self: stretch; }
+  .msg .body { line-height: 1.55; }
+  .msg .body p { margin: 0 0 10px; }
+  .msg .body table { border-collapse: collapse; margin: 8px 0 12px; font-size: 13px; }
+  .msg .body th, .msg .body td { border: 1px solid var(--border); padding: 5px 9px; text-align: left; }
+  .msg .body th { background: var(--panel); }
+  .msg .body code { font-family: var(--mono); font-size: 12.5px; background: var(--panel); padding: 1px 5px; border-radius: 4px; }
+  .msg .body h1, .msg .body h2, .msg .body h3 { font-size: 15px; margin: 14px 0 6px; }
+  .steps { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11.5px; color: var(--muted); background: var(--panel); border: 1px solid var(--border); border-radius: 999px; padding: 3px 9px; }
+  .chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--warn); }
+  .chip.ok .dot { background: var(--accent); }
+  .chip.fail .dot { background: var(--danger); }
+  .thinking { color: var(--muted); font-style: italic; font-size: 12.5px; white-space: pre-wrap; margin-bottom: 8px; max-height: 120px; overflow: hidden; }
+  .status { color: var(--muted); font-size: 12px; font-family: var(--mono); margin-top: 6px; }
+  .composer { border-top: 1px solid var(--border); padding: 14px 20px; }
+  .suggest { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .suggest button { background: var(--panel); color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 5px 11px; font-size: 12.5px; cursor: pointer; }
+  .suggest button:hover { color: var(--text); border-color: var(--accent-2); }
+  form { display: flex; gap: 10px; }
+  textarea { flex: 1; resize: none; background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-family: var(--sans); font-size: 14px; min-height: 44px; max-height: 160px; }
+  textarea:focus { outline: none; border-color: var(--accent-2); }
+  form button { background: var(--accent-2); color: #061225; border: 0; border-radius: 10px; padding: 0 18px; font-weight: 600; cursor: pointer; }
+  form button[disabled] { opacity: .5; cursor: default; }
+  .side { border-left: 1px solid var(--border); background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
+  .side h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0; padding: 14px 16px 8px; }
+  .side .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 16px 12px; }
+  .stat { background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 8px; }
+  .stat .v { font-family: var(--mono); font-size: 16px; }
+  .stat .k { color: var(--muted); font-size: 11px; }
+  .calls { flex: 1; overflow-y: auto; padding: 0 12px 12px; display: flex; flex-direction: column; gap: 6px; }
+  .call { background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-family: var(--mono); font-size: 11.5px; }
+  .call .ep { color: var(--accent-2); word-break: break-all; }
+  .call .meta { color: var(--muted); margin-top: 3px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .call .meta .cached { color: var(--warn); }
+  .call .meta .err { color: var(--danger); }
+  .call details { margin-top: 5px; }
+  .call summary { color: var(--muted); cursor: pointer; }
+  .call pre { margin: 6px 0 0; white-space: pre-wrap; word-break: break-all; color: #c9d1d9; max-height: 180px; overflow: auto; }
+  .empty { color: var(--muted); padding: 40px 20px; text-align: center; }
+  .empty h3 { margin: 0 0 6px; color: var(--text); }
+</style>
+</head>
+<body>
+<div class="app">
+  <main>
+    <header>
+      <div class="logo"></div>
+      <div><h1>Argus</h1><div class="sub">Market analyst on live CoinMarketCap data</div></div>
+      <div class="spacer"></div>
+      <button id="new">New conversation</button>
+    </header>
+    <div class="thread" id="thread">
+      <div class="empty" id="empty">
+        <h3>Ask about the market.</h3>
+        Every number in the answer comes from a live CoinMarketCap API call. The calls are listed on the right as they happen.
+      </div>
+    </div>
+    <div class="composer">
+      <div class="suggest" id="suggest"></div>
+      <form id="form">
+        <textarea id="input" placeholder="Why is Solana moving today?" rows="1"></textarea>
+        <button id="send" type="submit">Ask</button>
+      </form>
+    </div>
+  </main>
+  <aside class="side">
+    <h2>Live CoinMarketCap calls</h2>
+    <div class="stats">
+      <div class="stat"><div class="v" id="s-calls">0</div><div class="k">calls</div></div>
+      <div class="stat"><div class="v" id="s-credits">0</div><div class="k">credits</div></div>
+      <div class="stat"><div class="v" id="s-cached">0</div><div class="k">cache hits</div></div>
+    </div>
+    <div class="calls" id="calls"></div>
+  </aside>
+</div>
+<script>
+(() => {
+  const thread = document.getElementById("thread");
+  const empty = document.getElementById("empty");
+  const form = document.getElementById("form");
+  const input = document.getElementById("input");
+  const sendBtn = document.getElementById("send");
+  const callsEl = document.getElementById("calls");
+  const suggest = document.getElementById("suggest");
+  let sessionId = null;
+  let busy = false;
+  const stats = { calls: 0, credits: 0, cached: 0 };
+
+  const SUGGESTIONS = [
+    "How is the market today?",
+    "Why is SOL moving today?",
+    "Is it altcoin season?",
+    "Which sectors are rotating this week?",
+    "Compare BTC, ETH and SOL risk over 90 days",
+    "What got liquidated in the last 24h?",
+  ];
+  for (const s of SUGGESTIONS) {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = s;
+    b.onclick = () => { input.value = s; form.requestSubmit(); };
+    suggest.appendChild(b);
+  }
+
+  function esc(s) { return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+  function fmtUsd(n) { return n >= 1e12 ? (n/1e12).toFixed(2)+"T" : n >= 1e9 ? (n/1e9).toFixed(2)+"B" : n >= 1e6 ? (n/1e6).toFixed(1)+"M" : String(n); }
+
+  function addUser(text) {
+    empty.style.display = "none";
+    const el = document.createElement("div");
+    el.className = "msg user";
+    el.textContent = text;
+    thread.appendChild(el);
+    thread.scrollTop = thread.scrollHeight;
+  }
+
+  function addAssistant() {
+    const el = document.createElement("div");
+    el.className = "msg assistant";
+    el.innerHTML = '<div class="steps"></div><div class="thinking" hidden></div><div class="body"></div><div class="status"></div>';
+    thread.appendChild(el);
+    return {
+      el,
+      steps: el.querySelector(".steps"),
+      thinking: el.querySelector(".thinking"),
+      body: el.querySelector(".body"),
+      status: el.querySelector(".status"),
+      text: "",
+      chips: new Map(),
+    };
+  }
+
+  function renderCall(rec) {
+    stats.calls += 1;
+    if (rec.cached) stats.cached += 1; else stats.credits += rec.creditCount;
+    document.getElementById("s-calls").textContent = stats.calls;
+    document.getElementById("s-credits").textContent = stats.credits;
+    document.getElementById("s-cached").textContent = stats.cached;
+    const q = Object.entries(rec.query).map(([k, v]) => `${k}=${v}`).join("&");
+    const el = document.createElement("div");
+    el.className = "call";
+    const bad = rec.httpStatus >= 400;
+    el.innerHTML = `<div class="ep">GET ${esc(rec.endpoint)}${q ? "?" + esc(q) : ""}</div>
+      <div class="meta"><span class="${bad ? "err" : ""}">${rec.httpStatus}</span>
+      ${rec.cached ? '<span class="cached">cache</span>' : `<span>${rec.creditCount} credit${rec.creditCount === 1 ? "" : "s"}</span><span>${rec.elapsedMs} ms</span>`}
+      <span>${new Date(rec.at).toLocaleTimeString()}</span></div>
+      <details><summary>response</summary><pre>${esc(rec.preview)}</pre></details>`;
+    callsEl.prepend(el);
+  }
+
+  function chip(a, name, state) {
+    let c = a.chips.get(name + "#" + (a.chips.size));
+    const el = document.createElement("span");
+    el.className = "chip " + state;
+    el.innerHTML = `<span class="dot"></span>${esc(name)}`;
+    a.steps.appendChild(el);
+    return el;
+  }
+
+  async function ask(question) {
+    if (busy) return;
+    busy = true; sendBtn.disabled = true;
+    addUser(question);
+    const a = addAssistant();
+    const pending = [];
+    try {
+      const res = await fetch("/api/chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ sessionId, message: question }) });
+      if (!res.ok || !res.body) throw new Error("Request failed: " + res.status);
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let idx;
+        while ((idx = buf.indexOf("\n\n")) >= 0) {
+          const chunk = buf.slice(0, idx); buf = buf.slice(idx + 2);
+          let event = "message", data = "";
+          for (const line of chunk.split("\n")) {
+            if (line.startsWith("event:")) event = line.slice(6).trim();
+            else if (line.startsWith("data:")) data += line.slice(5).trim();
+          }
+          if (!data) continue;
+          const e = JSON.parse(data);
+          handle(e, event, a, pending);
+        }
+      }
+    } catch (err) {
+      a.status.textContent = "Error: " + err.message;
+    } finally {
+      busy = false; sendBtn.disabled = false; input.focus();
+    }
+  }
+
+  function handle(e, event, a, pending) {
+    switch (event) {
+      case "session": sessionId = e.sessionId; break;
+      case "thinking":
+        a.thinking.hidden = false;
+        a.thinking.textContent = (a.thinking.textContent + e.delta).slice(-600);
+        break;
+      case "text":
+        a.thinking.hidden = true;
+        a.text += e.delta;
+        a.body.innerHTML = marked.parse(a.text);
+        thread.scrollTop = thread.scrollHeight;
+        break;
+      case "tool_call":
+        pending.push(chip(a, e.name, "run"));
+        break;
+      case "tool_result": {
+        const el = pending.shift();
+        if (el) { el.className = "chip " + (e.ok ? "ok" : "fail"); el.title = e.summary; el.innerHTML += ` <span style="opacity:.7">${e.ms}ms</span>`; }
+        break;
+      }
+      case "api_call": renderCall(e.record); break;
+      case "done":
+        a.thinking.hidden = true;
+        a.status.textContent = `tokens in ${e.usage.input_tokens} · out ${e.usage.output_tokens}` + (e.usage.cache_read_input_tokens ? ` · cache read ${e.usage.cache_read_input_tokens}` : "");
+        break;
+      case "error":
+        a.status.textContent = "Error: " + e.message;
+        break;
+    }
+  }
+
+  form.addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const q = input.value.trim();
+    if (!q) return;
+    input.value = "";
+    ask(q);
+  });
+  input.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter" && !ev.shiftKey) { ev.preventDefault(); form.requestSubmit(); }
+  });
+  document.getElementById("new").onclick = async () => {
+    if (sessionId) fetch("/api/session/" + sessionId, { method: "DELETE" });
+    sessionId = null;
+    thread.querySelectorAll(".msg").forEach((m) => m.remove());
+    empty.style.display = "";
+  };
+})();
+</script>
+</body>
+</html>

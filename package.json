@@ -1,0 +1,31 @@
+{
+  "name": "argus",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Argus: an AI market analyst agent that answers real questions with live CoinMarketCap data.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "tsx --env-file=.env src/server.ts",
+    "ask": "tsx --env-file=.env src/cli.ts ask",
+    "brief": "tsx --env-file=.env src/cli.ts brief",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "start": "node --env-file=.env dist/server.js",
+    "test": "node --test --import tsx tests/**/*.test.ts"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.124.0",
+    "@hono/node-server": "^2.1.1",
+    "hono": "^4.13.7",
+    "zod": "^4.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.2",
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.3"
+  }
+}
