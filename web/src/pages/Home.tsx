@@ -56,7 +56,7 @@ export default function Home() {
 
       <motion.div {...fade} transition={{ duration: 0.4, delay: 0.1 }} className="grid gap-4 lg:grid-cols-3">
         <div data-tour="chart" className="lg:col-span-2"><HeroChart /></div>
-        <div data-tour="brief" className="min-h-[420px]"><BriefDeck /></div>
+        <div data-tour="brief" className="min-h-[540px] lg:min-h-[420px]"><BriefDeck /></div>
       </motion.div>
 
       <motion.div {...fade} transition={{ duration: 0.4, delay: 0.15 }} className="grid gap-4 lg:grid-cols-3">
