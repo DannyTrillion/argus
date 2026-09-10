@@ -20,7 +20,10 @@ track **AI Agents and Automation**.
 | **Explore** | Top 200 coins with price, 24h and 7d change, market cap, volume, 7-day sparklines, sortable columns, and filters for cap size, DeFi, Layer 1, AI, memes and stablecoins. |
 | **Coin** | Price and volume chart with 24h to 1y ranges (candles where the plan allows), key stats, ATH distance, a 90-day risk profile (return, volatility, drawdown, correlation with BTC), project info, and an inline analyst with prefilled questions. |
 | **Watchlist** | Saved coins, a rebased relative-performance chart and a correlation heatmap for any selection. |
-| **Analyst** | The full agent: streaming answers, tool steps, and an expandable list of every CoinMarketCap call with its credit cost and response. |
+| **Analyst** | The full agent: streaming answers, inline charts for risk, history and liquidation results, tool steps, and an expandable list of every CoinMarketCap call with its credit cost and response. |
+| **Status** | Plan tier and credit usage, a live probe of which endpoint families the key can reach, brief state, and the recent call log. |
+
+Also: a first-run welcome tour with the Argus owl, a Cmd+K command palette (coins, screens, saved questions), local price and Fear & Greed alerts with browser notifications, a floating tab bar on phones, and copy-as-markdown on answers and the brief.
 
 ## What the agent does that a plain API call cannot
 
