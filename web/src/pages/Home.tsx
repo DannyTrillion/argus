@@ -9,6 +9,7 @@ import { HeroChart } from "../components/home/HeroChart";
 import { SectorMap } from "../components/home/SectorMap";
 import { LiquidationsCard } from "../components/home/Liquidations";
 import { Movers } from "../components/home/Movers";
+import { BriefCard } from "../components/home/BriefCard";
 import { Card, CardTitle } from "../components/ui/Card";
 import { Gauge } from "../components/ui/Gauge";
 import { Skeleton } from "../components/ui/Skeleton";
@@ -54,7 +55,11 @@ export default function Home() {
         )}
       </motion.div>
 
-      <motion.div {...fade} transition={{ duration: 0.4, delay: 0.1 }} className="grid gap-4">
+      <motion.div {...fade} transition={{ duration: 0.4, delay: 0.1 }} className="grid gap-4 lg:grid-cols-3">
+        <BriefCard />
+      </motion.div>
+
+      <motion.div {...fade} transition={{ duration: 0.4, delay: 0.12 }} className="grid gap-4">
         <HeroChart />
       </motion.div>
 

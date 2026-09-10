@@ -8,13 +8,15 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "tsx --env-file=.env src/server.ts",
+    "dev": "tsx watch --env-file=.env src/server.ts",
     "ask": "tsx --env-file=.env src/cli.ts ask",
     "brief": "tsx --env-file=.env src/cli.ts brief",
     "typecheck": "tsc --noEmit",
-    "build": "tsc",
-    "start": "node --env-file=.env dist/server.js",
-    "test": "node --test --import tsx tests/**/*.test.ts"
+    "build": "tsc && pnpm --dir web build",
+    "start": "node dist/server.js",
+    "test": "node --test --import tsx tests/**/*.test.ts",
+    "dev:web": "pnpm --dir web dev",
+    "postinstall": "pnpm --dir web install --frozen-lockfile || true"
   },
   "license": "MIT",
   "dependencies": {

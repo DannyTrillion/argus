@@ -17,6 +17,7 @@ import type { BetaMessageParam } from "@anthropic-ai/sdk/resources/beta/messages
 import { config } from "./config.js";
 import { runAgent, describeError } from "./agent/agent.js";
 import { api } from "./api/routes.js";
+import { startBriefSchedule } from "./services/brief.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const webDist = join(here, "..", "web", "dist");
@@ -79,4 +80,5 @@ if (existsSync(join(webDist, "index.html"))) {
 
 serve({ fetch: app.fetch, port: config.port }, (info) => {
   console.log(`Argus listening on http://localhost:${info.port} (model: ${config.model})`);
+  startBriefSchedule();
 });

@@ -74,6 +74,7 @@ export interface PerformanceStats { id: number; symbol: string; periods: Record<
 export interface CoinDetail { coin: Coin; info: CoinInfo | null; performance: PerformanceStats | null; risk: (SeriesStats & { correlation_with_btc: number | null; source: "ohlcv" | "quotes_historical" }) | null }
 export interface CompareResult { days: number; stats: Array<SeriesStats & { source: string }>; normalized: Array<{ date: string; values: Record<string, number | null> }>; correlation: Array<{ a: string; b: string; r: number | null }> }
 export interface MapEntry { id: number; name: string; symbol: string; slug: string; rank?: number }
+export interface Brief { text: string; generatedAt: string; model: string; calls: number; credits: number; durationMs: number }
 export interface CallRecord { id: number; endpoint: string; query: Record<string, string>; httpStatus: number; creditCount: number; elapsedMs: number; cached: boolean; at: string; preview: string }
 
 export class ApiError extends Error {
@@ -105,4 +106,5 @@ export const api = {
   compare: (symbols: string[], days = 90) => get<CompareResult>(`/compare?symbols=${encodeURIComponent(symbols.join(","))}&days=${days}`),
   search: (q: string) => get<MapEntry[]>(`/coins/search?q=${encodeURIComponent(q)}`),
   calls: () => get<CallRecord[]>("/calls"),
+  brief: () => get<Brief>("/brief"),
 };

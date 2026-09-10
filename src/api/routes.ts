@@ -5,6 +5,7 @@ import { Hono } from "hono";
 import * as market from "../services/market.js";
 import { recentCalls, CmcApiError } from "../cmc/http.js";
 import { config } from "../config.js";
+import { currentBrief, getBrief, refreshBrief } from "../services/brief.js";
 
 export const api = new Hono();
 
@@ -47,3 +48,11 @@ api.get("/compare", async (c) => {
   if (symbols.length < 1) return c.json({ error: "symbols required" }, 400);
   return c.json(await market.compare(symbols, Number(c.req.query("days")) || 90));
 });
+
+// Automated brief: GET returns the latest (generating on first call), POST forces a refresh.
+api.get("/brief", async (c) => {
+  const cached = currentBrief();
+  if (cached) return c.json(cached);
+  return c.json(await getBrief());
+});
+api.post("/brief/refresh", async (c) => c.json(await refreshBrief()));

@@ -47,7 +47,7 @@ function SearchBox() {
           onFocus={() => setOpen(true)}
           onKeyDown={(e) => { if (e.key === "Enter" && results[0]) { nav(`/coin/${results[0].id}`); setOpen(false); setQ(""); } }}
           placeholder="Search a coin"
-          className="w-full bg-transparent text-[13px] text-ink placeholder:text-ink-3 focus:outline-none"
+          className="w-full min-w-0 bg-transparent text-[13px] text-ink placeholder:text-ink-3 focus:outline-none"
         />
       </div>
       {open && results.length > 0 && (
@@ -70,7 +70,7 @@ function SearchBox() {
 
 export function Shell() {
   return (
-    <div className="mx-auto flex min-h-full max-w-[1440px] flex-col px-4 pb-24 pt-4 sm:px-6 md:pb-8 lg:px-8">
+    <div className="mx-auto flex min-h-full w-full max-w-[1440px] flex-col overflow-x-hidden px-4 pb-28 pt-4 sm:px-6 md:pb-8 lg:px-8">
       <header className="mb-6 flex items-center gap-4">
         <Logo />
         <nav className="glass-2 pill mx-auto hidden items-center gap-1 p-1 md:flex">
@@ -97,15 +97,15 @@ export function Shell() {
       <main className="flex-1">
         <Outlet />
       </main>
-      <nav className="glass fixed bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 p-1 md:hidden">
+      <nav className="glass fixed bottom-4 left-1/2 z-20 flex max-w-[calc(100vw-24px)] -translate-x-1/2 items-center gap-0.5 p-1 md:hidden">
         {NAV.map((n) => (
           <NavLink
             key={n.to}
             to={n.to}
             end={n.end}
-            className={({ isActive }) => clsx("pill flex items-center gap-1.5 px-3.5 py-2 text-[12px]", isActive ? "bg-ink text-bg" : "text-ink-2")}
+            className={({ isActive }) => clsx("pill flex flex-col items-center gap-0.5 px-3.5 py-1.5 text-[10.5px]", isActive ? "bg-ink text-bg" : "text-ink-2")}
           >
-            <n.icon size={15} /> {n.label}
+            <n.icon size={16} /> {n.label}
           </NavLink>
         ))}
       </nav>
