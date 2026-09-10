@@ -294,7 +294,7 @@ export interface CoinInfo {
 }
 
 export async function info(ids: number[]): Promise<CoinInfo[]> {
-  const res = await cmcGet<Record<string, RawInfo>>("/v2/cryptocurrency/info", { id: ids, aux: "urls,logo,description,tags,platform,date_added,date_launched" });
+  const res = await cmcGet<Record<string, RawInfo>>("/v2/cryptocurrency/info", { id: ids, aux: "urls,logo,description,tags,platform,date_added" });
   return Object.values(res.data).map((c) => ({
     id: c.id,
     name: c.name,
@@ -303,7 +303,7 @@ export async function info(ids: number[]): Promise<CoinInfo[]> {
     category: c.category,
     description: c.description ? c.description.slice(0, 600) : undefined,
     date_launched: c.date_launched ?? null,
-    tags: c.tags?.slice(0, 15),
+    tags: c.tags?.filter((t) => !NOISY_TAG.test(t)).slice(0, 10),
     urls: c.urls
       ? Object.fromEntries(Object.entries(c.urls).filter(([, v]) => Array.isArray(v) && v.length > 0).map(([k, v]) => [k, v.slice(0, 2)]))
       : undefined,
@@ -484,6 +484,40 @@ export async function quotesHistorical(opts: { id?: number; symbol?: string; cou
 
 const PLAN_LIMIT_ERROR = 1006;
 
+/**
+ * Daily closing prices for many coins in as few calls as possible (batches of 100 ids).
+ * Used for the sparkline column on the Explore screen. 1 credit per 100 points.
+ */
+export async function sparklines(ids: number[], count = 8): Promise<Map<number, number[]>> {
+  interface RawAsset {
+    id: number;
+    quotes: Array<{ quote: Record<string, { price: number }> }>;
+  }
+  const out = new Map<number, number[]>();
+  const unique = [...new Set(ids)];
+  for (let i = 0; i < unique.length; i += 100) {
+    const batch = unique.slice(i, i + 100);
+    const res = await cmcGet<Record<string, RawAsset | RawAsset[]>>("/v3/cryptocurrency/quotes/historical", {
+      id: batch,
+      count,
+      interval: "daily",
+      convert: CONVERT,
+      skip_invalid: true,
+    });
+    for (const v of Object.values(res.data)) {
+      const assets = Array.isArray(v) ? v : [v];
+      for (const a of assets) {
+        if (!a || !Array.isArray(a.quotes)) continue;
+        out.set(
+          a.id,
+          a.quotes.map((q) => num((q.quote[CONVERT] ?? Object.values(q.quote)[0])?.price) ?? 0),
+        );
+      }
+    }
+  }
+  return out;
+}
+
 export async function ohlcv(opts: {
   id?: number;
   symbol?: string;
@@ -498,8 +532,16 @@ export async function ohlcv(opts: {
   } catch (err) {
     // Basic plan cannot call OHLCV. Daily closes from quotes/historical are close enough for
     // returns, drawdown, volatility and correlation, so degrade gracefully instead of failing.
-    if (err instanceof CmcApiError && err.errorCode === PLAN_LIMIT_ERROR && (opts.timePeriod ?? "daily") === "daily") {
-      return quotesHistorical({ id: opts.id, symbol: opts.symbol, count: opts.count, timeStart: opts.timeStart, timeEnd: opts.timeEnd });
+    if (err instanceof CmcApiError && err.errorCode === PLAN_LIMIT_ERROR) {
+      const hourly = (opts.timePeriod ?? "daily") === "hourly";
+      return quotesHistorical({
+        id: opts.id,
+        symbol: opts.symbol,
+        count: opts.count,
+        interval: hourly ? "1h" : "daily",
+        timeStart: opts.timeStart,
+        timeEnd: opts.timeEnd,
+      });
     }
     throw err;
   }
