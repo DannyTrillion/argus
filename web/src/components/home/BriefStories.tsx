@@ -127,8 +127,8 @@ export function BriefStories() {
     switch (key) {
       case "backdrop":
         return capSpark.length > 2 ? (
-          <Drift x={8} y={3} duration={18} className="bottom-0 left-0 right-0 opacity-60">
-            <Sparkline data={capSpark} width={600} height={110} color="#e7c46a" strokeWidth={1.5} fluid />
+          <Drift x={8} y={3} duration={18} className="bottom-0 left-0 right-0 opacity-50">
+            <Sparkline data={capSpark} width={600} height={78} color="#e7c46a" strokeWidth={1.5} fluid />
           </Drift>
         ) : null;
       case "movers":
