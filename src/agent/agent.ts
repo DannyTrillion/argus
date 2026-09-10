@@ -13,7 +13,7 @@ export type AgentEvent =
   | { type: "text"; delta: string }
   | { type: "thinking"; delta: string }
   | { type: "tool_call"; id: string; name: string; input: unknown }
-  | { type: "tool_result"; name: string; ok: boolean; ms: number; summary: string }
+  | { type: "tool_result"; name: string; ok: boolean; ms: number; summary: string; data?: unknown }
   | { type: "api_call"; record: CallRecord }
   | { type: "done"; text: string; usage: { input_tokens: number; output_tokens: number; cache_read_input_tokens: number | null } }
   | { type: "error"; message: string };

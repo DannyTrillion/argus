@@ -11,6 +11,8 @@ export interface Step {
   ok?: boolean;
   ms?: number;
   summary?: string;
+  /** Structured result for chartable tools (analyze_series, histories, liquidations). */
+  data?: unknown;
 }
 
 export interface ChatMessage {
@@ -95,7 +97,7 @@ export function useChat() {
                 patchLast((m) => {
                   const steps = m.steps.slice();
                   const i = steps.findIndex((s) => s.name === e.name && s.ok === undefined);
-                  if (i >= 0) steps[i] = { ...steps[i], ok: e.ok, ms: e.ms, summary: e.summary };
+                  if (i >= 0) steps[i] = { ...steps[i], ok: e.ok, ms: e.ms, summary: e.summary, data: e.data };
                   return { ...m, steps };
                 });
                 pendingSteps = Math.max(0, pendingSteps - 1);

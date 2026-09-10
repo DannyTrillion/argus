@@ -94,7 +94,31 @@ export default function Explore() {
         </div>
       </div>
 
-      <div className="glass overflow-hidden p-0">
+      {/* Phone layout: cards. */}
+      <div className="space-y-2 sm:hidden">
+        {isLoading && Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-[72px]" />)}
+        {rows.map((c) => (
+          <Link key={c.id} to={`/coin/${c.id}`} className="glass flex items-center gap-3 p-3">
+            <img src={`https://s2.coinmarketcap.com/static/img/coins/32x32/${c.id}.png`} alt="" className="h-8 w-8 rounded-full bg-surface-2" loading="lazy" />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 text-[13.5px] font-medium">
+                <span className="font-mono text-[11px] text-ink-3">{c.cmc_rank}</span> {c.name} <span className="text-ink-3">{c.symbol}</span>
+              </div>
+              <div className="font-mono text-[11px] text-ink-3">cap {usd(c.quote.market_cap, { compact: true })} · vol {usd(c.quote.volume_24h, { compact: true })}</div>
+            </div>
+            <Sparkline data={c.sparkline} width={64} height={22} />
+            <div className="w-[82px] text-right">
+              <div className="font-mono text-[13px]">{usd(c.quote.price)}</div>
+              <Change value={c.quote.percent_change_24h} className="text-[11.5px]" />
+            </div>
+            <button onClick={(e) => { e.preventDefault(); wl.toggle(c.id); }} className={clsx("p-1", wl.has(c.id) ? "text-gold" : "text-ink-3")} aria-label="Toggle watchlist">
+              <Star size={14} fill={wl.has(c.id) ? "currentColor" : "none"} />
+            </button>
+          </Link>
+        ))}
+      </div>
+
+      <div className="glass hidden overflow-hidden p-0 sm:block">
         <div className="scroll-thin overflow-x-auto">
           <table className="w-full min-w-[820px] border-collapse">
             <thead className="border-b border-line">

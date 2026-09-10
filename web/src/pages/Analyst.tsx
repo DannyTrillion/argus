@@ -6,6 +6,7 @@ import { useChat, type ChatMessage } from "../lib/chat";
 import { Markdown } from "../components/ui/Markdown";
 import type { CallRecord } from "../lib/api";
 import { Mascot } from "../components/ui/Mascot";
+import { AnswerCharts } from "../components/analyst/AnswerCharts";
 
 const SUGGESTIONS = [
   "How is the market today?",
@@ -75,6 +76,7 @@ function Bubble({ m }: { m: ChatMessage }) {
         </div>
       )}
       {m.text && <Markdown text={m.text} />}
+      {m.done && <AnswerCharts steps={m.steps} />}
       {m.error && <div className="mt-2 text-[12.5px] text-down">{m.error}</div>}
       <Calls calls={m.calls} />
       {m.usage && (

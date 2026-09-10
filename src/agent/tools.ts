@@ -15,7 +15,12 @@ export interface ToolEvent {
   ok: boolean;
   ms: number;
   summary: string;
+  /** Structured result for tools the UI can chart. Omitted for large or non-visual results. */
+  data?: unknown;
 }
+
+/** Tools whose results are small and chartable; the UI renders them under the answer. */
+const CHARTABLE = new Set(["analyze_series", "get_global_metrics_history", "get_fear_greed", "get_liquidations", "get_ohlcv"]);
 
 type Emit = (event: ToolEvent) => void;
 
@@ -30,7 +35,7 @@ function instrument<I>(name: string, emit: Emit, fn: (input: I) => Promise<unkno
     try {
       const result = await fn(input);
       const text = json(result);
-      emit({ name, input, ok: true, ms: Math.round(performance.now() - started), summary: `${text.length} chars` });
+      emit({ name, input, ok: true, ms: Math.round(performance.now() - started), summary: `${text.length} chars`, data: CHARTABLE.has(name) ? result : undefined });
       return text;
     } catch (err) {
       const message =

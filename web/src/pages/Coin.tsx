@@ -10,6 +10,7 @@ import { Card, CardTitle } from "../components/ui/Card";
 import { Skeleton } from "../components/ui/Skeleton";
 import { PriceChart } from "../components/coin/PriceChart";
 import { AskInline } from "../components/coin/AskInline";
+import { Peers } from "../components/coin/Peers";
 
 function Stat({ label, value, sub }: { label: string; value: string; sub?: React.ReactNode }) {
   return (
@@ -73,6 +74,7 @@ export default function CoinPage() {
         <div className="space-y-4 lg:col-span-2">
           <PriceChart id={coin.id} symbol={coin.symbol} />
           <AskInline symbol={coin.symbol} name={coin.name} />
+          <Peers coin={coin} />
         </div>
         <div className="space-y-4">
           <Card>

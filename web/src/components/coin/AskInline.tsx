@@ -5,6 +5,7 @@ import { useChat } from "../../lib/chat";
 import { Markdown } from "../ui/Markdown";
 import { Card, CardTitle } from "../ui/Card";
 import { Mascot } from "../ui/Mascot";
+import { AnswerCharts } from "../analyst/AnswerCharts";
 
 export function AskInline({ symbol, name }: { symbol: string; name: string }) {
   const peer = symbol === "BTC" ? "ETH" : "BTC";
@@ -43,6 +44,7 @@ export function AskInline({ symbol, name }: { symbol: string; name: string }) {
             </div>
           )}
           {last.text ? <Markdown text={last.text} /> : <div className="flex items-center gap-3 text-[12px] text-ink-3"><Mascot size={36} thinking /> Reading the market…</div>}
+          {last.done && <AnswerCharts steps={last.steps} />}
           {chat.busy && (
             <button onClick={chat.stop} className="mt-3 flex items-center gap-1.5 text-[12px] text-ink-3 hover:text-ink"><Square size={11} /> stop</button>
           )}
