@@ -6,9 +6,10 @@ import { Markdown } from "../ui/Markdown";
 import { Card, CardTitle } from "../ui/Card";
 
 export function AskInline({ symbol, name }: { symbol: string; name: string }) {
+  const peer = symbol === "BTC" ? "ETH" : "BTC";
   const prompts = [
     `Why is ${symbol} moving today?`,
-    `How risky is ${symbol} compared with BTC?`,
+    `How risky is ${symbol} compared with ${peer}?`,
     `Where is ${symbol} relative to its all-time high, and what would confirm a trend change?`,
     `What is ${name} and what would make it worth watching?`,
   ];

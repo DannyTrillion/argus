@@ -86,7 +86,7 @@ export function PriceChart({ id, symbol }: { id: number; symbol: string }) {
           </div>
         }
       >
-        Price {data?.source === "quotes_historical" && <span className="ml-2 text-[11px] normal-case text-ink-3">· daily closes (candles need a higher CMC plan)</span>}
+        Price {data?.source === "quotes_historical" && <span className="ml-2 hidden text-[11px] normal-case text-ink-3 sm:inline" title="OHLCV candles need a Startup plan or higher; showing daily closes from quotes/historical">· daily closes</span>}
       </CardTitle>
       {isLoading ? <Skeleton className="h-[380px]" /> : <div ref={ref} className="h-[380px] w-full" />}
     </Card>
