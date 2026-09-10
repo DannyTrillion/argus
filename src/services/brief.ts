@@ -3,6 +3,8 @@
  * (default every 4 hours) and on first request, so the Home screen always has
  * a fresh read of the market without anyone typing a prompt.
  */
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import type { BetaMessageParam } from "@anthropic-ai/sdk/resources/beta/messages";
 import { runAgent } from "../agent/agent.js";
 
@@ -19,8 +21,28 @@ const PROMPT =
   "Write today's crypto market brief for a reader who checks the market once a day. Use these headings exactly: Market backdrop, Movers that matter, Sector rotation, Leverage and risk, Watch list. Keep it under 350 words. Every number must come from the tools. No preamble, start with the first heading.";
 
 const REFRESH_MS = Number(process.env.BRIEF_REFRESH_MINUTES ?? 240) * 60_000;
+const CACHE_FILE = process.env.BRIEF_CACHE_FILE ?? ".cache/brief.json";
 
-let current: Brief | null = null;
+function load(): Brief | null {
+  try {
+    const b = JSON.parse(readFileSync(CACHE_FILE, "utf8")) as Brief;
+    if (b && typeof b.text === "string" && Date.now() - Date.parse(b.generatedAt) < REFRESH_MS) return b;
+  } catch {
+    /* no cache yet */
+  }
+  return null;
+}
+
+function save(b: Brief): void {
+  try {
+    mkdirSync(dirname(CACHE_FILE), { recursive: true });
+    writeFileSync(CACHE_FILE, JSON.stringify(b));
+  } catch (err) {
+    console.warn("[brief] could not persist brief:", err instanceof Error ? err.message : err);
+  }
+}
+
+let current: Brief | null = load();
 let inflight: Promise<Brief> | null = null;
 let timer: NodeJS.Timeout | null = null;
 
@@ -43,6 +65,7 @@ async function generate(): Promise<Brief> {
   model = process.env.ARGUS_MODEL ?? "claude-opus-5";
   const brief: Brief = { text: result.text, generatedAt: new Date().toISOString(), model, calls, credits, durationMs: Date.now() - started };
   current = brief;
+  save(brief);
   return brief;
 }
 
@@ -72,8 +95,8 @@ export function startBriefSchedule(): void {
     console.warn("[brief] ANTHROPIC_API_KEY not set; automated brief disabled");
     return;
   }
-  // Warm on boot, then refresh on an interval. Errors are logged, never fatal.
-  refreshBrief().catch((err) => console.error("[brief] initial generation failed:", err instanceof Error ? err.message : err));
+  // Warm on boot unless a fresh cached brief was loaded, then refresh on an interval.
+  if (!current) refreshBrief().catch((err) => console.error("[brief] initial generation failed:", err instanceof Error ? err.message : err));
   timer = setInterval(() => {
     refreshBrief().catch((err) => console.error("[brief] refresh failed:", err instanceof Error ? err.message : err));
   }, REFRESH_MS);

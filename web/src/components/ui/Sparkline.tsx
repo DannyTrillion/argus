@@ -1,7 +1,7 @@
 /** Inline SVG sparkline. No chart library needed for something this small. */
-export function Sparkline({ data, width = 96, height = 28, color, strokeWidth = 1.5, fill = true }: { data: number[]; width?: number; height?: number; color?: string; strokeWidth?: number; fill?: boolean }) {
+export function Sparkline({ data, width = 96, height = 28, color, strokeWidth = 1.5, fill = true, fluid = false }: { data: number[]; width?: number; height?: number; color?: string; strokeWidth?: number; fill?: boolean; /** Stretch to the container width, keeping the given height. */ fluid?: boolean }) {
   const pts = data.filter((n) => Number.isFinite(n));
-  if (pts.length < 2) return <svg width={width} height={height} />;
+  if (pts.length < 2) return <svg width={fluid ? "100%" : width} height={height} />;
   const min = Math.min(...pts);
   const max = Math.max(...pts);
   const span = max - min || 1;
@@ -11,7 +11,7 @@ export function Sparkline({ data, width = 96, height = 28, color, strokeWidth = 
   const c = color ?? (pts[pts.length - 1] >= pts[0] ? "#6fd39c" : "#ef6f6f");
   const id = `sp${Math.round(min * 1000)}${pts.length}${width}`;
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="block">
+    <svg width={fluid ? "100%" : width} height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio={fluid ? "none" : "xMidYMid meet"} className="block">
       {fill && (
         <defs>
           <linearGradient id={id} x1="0" x2="0" y1="0" y2="1">

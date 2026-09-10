@@ -29,7 +29,7 @@ export default function Home() {
       <motion.div {...fade} transition={{ duration: 0.4 }} className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="text-[13px] text-ink-2">{greeting()} · {dateLabel()}</div>
-          <h1 className="font-display mt-1 text-[34px] font-light leading-tight tracking-tight sm:text-[40px]">The market, read live.</h1>
+          <h1 className="font-display mt-1 text-[30px] font-light leading-tight tracking-tight sm:text-[40px]">The market, read live.</h1>
         </div>
         <div className="flex items-center gap-2 whitespace-nowrap text-[12px] text-ink-3">
           <RefreshCw size={13} className={overview.isFetching ? "animate-spin" : ""} />
@@ -37,7 +37,7 @@ export default function Home() {
         </div>
       </motion.div>
 
-      <motion.div {...fade} transition={{ duration: 0.4, delay: 0.05 }} className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <motion.div {...fade} transition={{ duration: 0.4, delay: 0.05 }} className="grid min-w-0 grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
         {g ? (
           <>
             <StatTile label="Total market cap" value={usd(g.total_market_cap, { compact: true })} change={g.total_market_cap_yesterday_percentage_change} spark={spark("total_market_cap")} />
