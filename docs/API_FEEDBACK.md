@@ -39,6 +39,22 @@ Notes gathered while building Argus. Kept as a running log; the submission form 
    "defi" in the same list. A `category` field per tag (the v3 quotes response has one)
    exposed consistently everywhere would let clients filter without a hand-written deny list.
 
+8. **Fear & Greed history returns timestamps as epoch-second strings.**
+   `/v3/fear-and-greed/historical` gives `timestamp: "1757462400"` while `/v3/fear-and-greed/latest`
+   and every other historical endpoint use ISO 8601. Charting code that parses dates has to
+   special-case this one endpoint.
+
+9. **Per-coin liquidations are nested one level deeper than the docs suggest.** The rows of
+   `/v5/derivatives/liquidations/cryptocurrency/list/latest` sit under `data.cryptocurrencies[]`,
+   and each row's numbers sit under `quotes[]` keyed by the convert symbol, not under a
+   top-level `quote`. It differs from the shape of `/v5/derivatives/liquidations/quotes/latest`.
+
+10. **Plan limits surface as a generic error code.** On the Basic plan, OHLCV, trending,
+    gainers/losers and news all return `error_code: 1006` with no hint of which plan unlocks
+    them. Argus catches 1006 and falls back (daily closes from `quotes/historical`, movers from
+    a locally sorted listings screen), but a `required_plan` field in the error would let
+    clients explain the gap to the user instead of guessing.
+
 ## What it made possible
 
 - Every question in the demo is answered from live data with a visible per-call credit cost.
@@ -46,3 +62,19 @@ Notes gathered while building Argus. Kept as a running log; the submission form 
 - `/v1/cryptocurrency/categories` is the only public source I know of for sector-level
   market cap change, which is what makes the "sector rotation" analysis possible.
 - Liquidation totals by window explain sharp moves in a way price data alone cannot.
+- `/v3/cryptocurrency/quotes/historical` with `interval=1h` is enough to run a hourly anomaly
+  detector on the top 100 without the OHLCV endpoint, at one credit per 100 points.
+- The credit cost on every response (`status.credit_count`) let Argus show the exact price
+  of each answer, which turned out to be a feature judges and users both notice.
+
+## Paragraph for the submission form
+
+CoinMarketCap gave Argus everything it needed to be an analyst rather than a price ticker:
+categories for sector rotation, price-performance-stats for ATH context, liquidations for
+leverage, and hourly quotes/historical for anomaly detection, each with a visible credit cost.
+Where it got in the way: v3 endpoints return `error_code` as a string while v1/v2 return a
+number; sort plus `market_cap_min` on listings returns an empty list; symbol lookups return
+every asset sharing a ticker with no "best match"; tags are display names on quotes but slugs
+on listings; Fear & Greed history uses epoch-second strings; and plan-locked endpoints return
+a bare 1006 with no hint of the plan that unlocks them. Full notes with dates and repro
+parameters are in `docs/API_FEEDBACK.md` in the repo.
