@@ -8,6 +8,7 @@ import { z } from "zod";
 import * as cmc from "../cmc/endpoints.js";
 import { CmcApiError } from "../cmc/http.js";
 import { correlationByDate, summarizeCandles } from "./analytics.js";
+import { explainMove } from "../services/explain.js";
 
 export interface ToolEvent {
   name: string;
@@ -20,7 +21,7 @@ export interface ToolEvent {
 }
 
 /** Tools whose results are small and chartable; the UI renders them under the answer. */
-const CHARTABLE = new Set(["analyze_series", "get_global_metrics_history", "get_fear_greed", "get_liquidations", "get_ohlcv"]);
+const CHARTABLE = new Set(["analyze_series", "get_global_metrics_history", "get_fear_greed", "get_liquidations", "get_ohlcv", "explain_move"]);
 
 type Emit = (event: ToolEvent) => void;
 
@@ -310,7 +311,19 @@ export function createTools(emit: Emit) {
     ),
   });
 
+  const explainMoveTool = betaZodTool({
+    name: "explain_move",
+    description:
+      "Quantified attribution of a coin's move over 1h, 24h or 7d: how much is market beta (BTC move × the coin's 30-day beta), how much is its sector moving beyond the market, and how much is coin-specific, plus liquidation pressure. Use this first for any 'why is X moving' question and quote the components. It is a decomposition, not a cause; pair it with news or liquidations for the narrative.",
+    inputSchema: z.object({
+      symbol: z.string().describe("Ticker symbol such as SOL, or a CoinMarketCap id as a string"),
+      window: z.enum(["1h", "24h", "7d"]).default("24h"),
+    }),
+    run: instrument("explain_move", emit, (input: { symbol: string; window: "1h" | "24h" | "7d" }) => explainMove(input.symbol.toUpperCase(), input.window)),
+  });
+
   return [
+    explainMoveTool,
     getGlobalMetrics,
     getFearGreed,
     getAltcoinSeason,

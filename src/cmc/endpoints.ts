@@ -827,15 +827,48 @@ export async function liquidations(): Promise<Liquidations> {
   return q;
 }
 
-export async function liquidationsByCrypto(limit = 15): Promise<unknown[]> {
-  const res = await cmcGet<unknown[] | { data?: unknown[] }>("/v5/derivatives/liquidations/cryptocurrency/list/latest", { limit, convert: CONVERT });
-  const d = res.data as unknown;
-  if (Array.isArray(d)) return d.slice(0, limit);
-  if (d && typeof d === "object") {
-    const inner = Object.values(d as Record<string, unknown>).find(Array.isArray);
-    if (inner) return (inner as unknown[]).slice(0, limit);
+export interface CoinLiquidations {
+  id: number;
+  symbol: string;
+  name: string;
+  total_1h: number;
+  long_1h: number;
+  short_1h: number;
+  total_4h: number;
+  long_4h: number;
+  short_4h: number;
+  total_24h: number;
+  long_24h: number;
+  short_24h: number;
+}
+
+export async function liquidationsByCrypto(limit = 15): Promise<CoinLiquidations[]> {
+  interface RawRow {
+    crypto_id: number;
+    symbol: string;
+    name: string;
+    quotes: Array<Record<string, number | string>>;
   }
-  return [];
+  const res = await cmcGet<{ cryptocurrencies?: RawRow[] } | RawRow[]>("/v5/derivatives/liquidations/cryptocurrency/list/latest", { limit, convert: CONVERT });
+  const rows: RawRow[] = Array.isArray(res.data) ? res.data : (res.data.cryptocurrencies ?? []);
+  const n = (q: Record<string, number | string>, k: string) => (typeof q[k] === "number" ? (q[k] as number) : 0);
+  return rows.slice(0, limit).map((r) => {
+    const q = r.quotes?.find((x) => x.symbol === CONVERT) ?? r.quotes?.[0] ?? {};
+    return {
+      id: r.crypto_id,
+      symbol: r.symbol,
+      name: r.name,
+      total_1h: Math.round(n(q, "total_liquidations_1h")),
+      long_1h: Math.round(n(q, "long_liquidations_1h")),
+      short_1h: Math.round(n(q, "short_liquidations_1h")),
+      total_4h: Math.round(n(q, "total_liquidations_4h")),
+      long_4h: Math.round(n(q, "long_liquidations_4h")),
+      short_4h: Math.round(n(q, "short_liquidations_4h")),
+      total_24h: Math.round(n(q, "total_liquidations_24h")),
+      long_24h: Math.round(n(q, "long_liquidations_24h")),
+      short_24h: Math.round(n(q, "short_liquidations_24h")),
+    };
+  });
 }
 
 // ---------- content ----------

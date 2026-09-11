@@ -83,6 +83,21 @@ export interface Status {
   brief: { generatedAt: string; calls: number; credits: number; durationMs: number } | null;
   checkedAt: string;
 }
+export interface Explanation {
+  symbol: string; name: string; id: number; window: "1h" | "24h" | "7d";
+  coin_change_pct: number; btc_change_pct: number; total_market_change_pct: number | null;
+  beta_to_btc: number | null; correlation_to_btc: number | null; market_component_pct: number | null;
+  sector: { name: string; change_pct: number; excess_pct: number } | null; coin_specific_pct: number | null;
+  leverage: { coin_liquidations_usd: number | null; long_share_pct: number | null; market_liquidations_24h_usd: number | null; market_long_share_pct: number | null } | null;
+  read: "market beta" | "sector rotation" | "coin-specific" | "mixed"; read_text: string;
+  price: number | null; market_cap: number | null; volume_24h: number | null; volume_change_24h_pct: number | null; computed_at: string; caveats: string[];
+}
+export interface Finding {
+  id: string; fingerprint: string; kind: string; title: string; detail: string;
+  subject: { type: "coin"; id: number; symbol: string; name: string } | { type: "sector"; name: string } | { type: "market" };
+  severity: 1 | 2 | 3; metric: number; observedAt: string; summary: string; question: string; attribution: Explanation | null; calls: number; credits: number; investigatedAt: string;
+}
+export interface Findings { findings: Finding[]; lastScanAt: string | null; nextScanAt: string | null; intervalMinutes: number; investigationsToday: number; dailyCap: number; scanning: boolean }
 export interface Brief { text: string; generatedAt: string; model: string; calls: number; credits: number; durationMs: number }
 export interface CallRecord { id: number; endpoint: string; query: Record<string, string>; httpStatus: number; creditCount: number; elapsedMs: number; cached: boolean; at: string; preview: string }
 
@@ -117,4 +132,11 @@ export const api = {
   calls: () => get<CallRecord[]>("/calls"),
   brief: () => get<Brief>("/brief"),
   status: () => get<Status>("/status"),
+  explain: (symbol: string, window: "1h" | "24h" | "7d" = "24h") => get<Explanation>(`/explain?symbol=${encodeURIComponent(symbol)}&window=${window}`),
+  findings: () => get<Findings>("/findings"),
+  scanNow: async () => {
+    const res = await fetch("/api/watch/scan", { method: "POST" });
+    if (!res.ok) throw new ApiError(res.status, res.statusText);
+    return (await res.json()) as Findings;
+  },
 };

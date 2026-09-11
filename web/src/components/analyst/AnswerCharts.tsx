@@ -13,6 +13,7 @@ interface GlobalPoint { timestamp: string; btc_dominance: number; total_market_c
 interface FearGreed { latest: { value: number; value_classification: string }; history?: Array<{ value: number; timestamp?: string }> }
 interface Liq { total: { long_liquidations_1h: number; short_liquidations_1h: number; long_liquidations_4h: number; short_liquidations_4h: number; long_liquidations_24h: number; short_liquidations_24h: number } }
 interface Ohlcv { symbol: string; candles: Array<{ time_close: string; close: number; volume: number }>; source?: string }
+interface Explain { symbol: string; window: string; coin_change_pct: number; btc_change_pct: number; beta_to_btc: number | null; market_component_pct: number | null; sector: { name: string; excess_pct: number } | null; coin_specific_pct: number | null; read: string }
 
 function Frame({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -121,6 +122,31 @@ function PriceLine({ s }: { s: Ohlcv }) {
   return <Frame title={`${s.symbol} · ${s.candles.length} periods · ${first && last ? pct((last / first - 1) * 100) : ""}`}><div ref={ref} className="h-[180px] w-full" /></Frame>;
 }
 
+function Attribution({ e }: { e: Explain }) {
+  const parts = [
+    { label: "Market beta", value: e.market_component_pct ?? 0, color: "#8fb7ff" },
+    { label: e.sector ? `${e.sector.name} sector` : "Sector", value: e.sector?.excess_pct ?? 0, color: "#c99cff" },
+    { label: "Coin-specific", value: e.coin_specific_pct ?? 0, color: palette.gold },
+  ];
+  const scale = Math.max(1, ...parts.map((p) => Math.abs(p.value)), Math.abs(e.coin_change_pct));
+  return (
+    <Frame title={`${e.symbol} ${pct(e.coin_change_pct, 2)} over ${e.window} · ${e.read}`}>
+      <div className="space-y-2.5 py-1">
+        {parts.map((p) => (
+          <div key={p.label}>
+            <div className="mb-1 flex items-center justify-between text-[11.5px]"><span className="text-ink-2">{p.label}</span><span className="font-mono" style={{ color: p.color }}>{pct(p.value, 2)}</span></div>
+            <div className="relative h-2 w-full rounded-full bg-surface-2">
+              <div className="absolute inset-y-0 left-1/2 w-px bg-line-2" />
+              <div className="absolute inset-y-0 rounded-full" style={{ background: p.color, width: `${(Math.abs(p.value) / scale) * 50}%`, left: p.value >= 0 ? "50%" : undefined, right: p.value < 0 ? "50%" : undefined }} />
+            </div>
+          </div>
+        ))}
+        <div className="font-mono text-[10.5px] text-ink-3">BTC {pct(e.btc_change_pct, 2)} · beta {e.beta_to_btc ?? "—"}</div>
+      </div>
+    </Frame>
+  );
+}
+
 export function AnswerCharts({ steps }: { steps: Step[] }) {
   const items: ReactNode[] = [];
   steps.forEach((s, i) => {
@@ -131,6 +157,7 @@ export function AnswerCharts({ steps }: { steps: Step[] }) {
     else if (s.name === "get_fear_greed" && d && typeof d === "object" && "latest" in d) items.push(<FearLine key={i} fg={d as FearGreed} />);
     else if (s.name === "get_liquidations" && d && typeof d === "object" && "total" in d) items.push(<LiqBars key={i} liq={d as Liq} />);
     else if (s.name === "get_ohlcv" && d && typeof d === "object" && "candles" in d && (d as Ohlcv).candles.length > 2) items.push(<PriceLine key={i} s={d as Ohlcv} />);
+    else if (s.name === "explain_move" && d && typeof d === "object" && "coin_change_pct" in d) items.push(<Attribution key={i} e={d as Explain} />);
   });
   if (items.length === 0) return null;
   return <div className="mt-4 grid gap-3 md:grid-cols-2">{items}</div>;

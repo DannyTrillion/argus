@@ -7,6 +7,8 @@ import { recentCalls, CmcApiError } from "../cmc/http.js";
 import { config } from "../config.js";
 import { currentBrief, getBrief, refreshBrief } from "../services/brief.js";
 import { status } from "../services/status.js";
+import { explainMove, type Window } from "../services/explain.js";
+import { findings, scan } from "../services/watch.js";
 
 export const api = new Hono();
 
@@ -59,3 +61,19 @@ api.get("/brief", async (c) => {
 api.post("/brief/refresh", async (c) => c.json(await refreshBrief()));
 
 api.get("/status", async (c) => c.json(await status()));
+
+// Move explainer: deterministic attribution, no LLM.
+api.get("/explain", async (c) => {
+  const symbol = (c.req.query("symbol") ?? "").trim();
+  const window = (c.req.query("window") ?? "24h") as Window;
+  if (!symbol) return c.json({ error: "symbol required" }, 400);
+  if (!["1h", "24h", "7d"].includes(window)) return c.json({ error: "invalid window" }, 400);
+  return c.json(await explainMove(/^\d+$/.test(symbol) ? Number(symbol) : symbol.toUpperCase(), window));
+});
+
+// Argus noticed: findings feed and a manual scan trigger for demos.
+api.get("/findings", (c) => c.json(findings()));
+api.post("/watch/scan", async (c) => {
+  const fresh = await scan();
+  return c.json({ fresh, ...findings() });
+});

@@ -1,0 +1,241 @@
+/**
+ * The proof of the pitch, right under the pulse tiles: what Argus caught on its own,
+ * and a quantified explanation of any move. Both lead into the Analyst.
+ */
+import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "motion/react";
+import { Radar, SplitSquareHorizontal, Sparkles, RefreshCw, ArrowRight, Search } from "lucide-react";
+import clsx from "clsx";
+import { api, type Explanation } from "../../lib/api";
+import { usd, pct, timeAgo } from "../../lib/format";
+import { Markdown } from "../ui/Markdown";
+import { Mascot } from "../ui/Mascot";
+import { Skeleton } from "../ui/Skeleton";
+import { Change } from "../ui/Change";
+
+const KIND_LABEL: Record<string, string> = {
+  coin_move: "Price move",
+  volume_spike: "Volume spike",
+  liquidation_burst: "Liquidations",
+  dominance_break: "Dominance",
+  sector_divergence: "Sector",
+  sentiment_shift: "Sentiment",
+};
+
+function Severity({ n }: { n: number }) {
+  return (
+    <span className="flex items-center gap-0.5" title={`severity ${n}/3`}>
+      {[1, 2, 3].map((k) => <span key={k} className={clsx("h-1.5 w-1.5 rounded-full", k <= n ? (n === 3 ? "bg-down" : "bg-gold") : "bg-line-2")} />)}
+    </span>
+  );
+}
+
+function Summary({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  const long = text.length > 320;
+  return (
+    <div>
+      <div className={clsx("relative", !open && long && "max-h-[6.2em] overflow-hidden")}>
+        <Markdown text={text} className="mt-2 text-[12.5px] leading-relaxed [&_p]:mb-1.5" />
+        {!open && long && <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[#141416] to-transparent" />}
+      </div>
+      {long && <button onClick={() => setOpen((o) => !o)} className="mt-1 text-[11.5px] text-ink-3 hover:text-ink">{open ? "Show less" : "Read more"}</button>}
+    </div>
+  );
+}
+
+function NoticedFeed() {
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery({ queryKey: ["findings"], queryFn: api.findings, refetchInterval: 60_000 });
+  const scanNow = useMutation({ mutationFn: api.scanNow, onSuccess: (d) => qc.setQueryData(["findings"], d) });
+
+  if (isLoading || !data) return <Skeleton className="h-[300px]" />;
+  const list = data.findings.slice(0, 6);
+  return (
+    <div>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-[11.5px] text-ink-3">
+        <span>
+          Watching 200 coins, sectors, liquidations, dominance and sentiment · every {data.intervalMinutes} min
+          {data.lastScanAt ? ` · last scan ${timeAgo(data.lastScanAt)}` : ""}
+        </span>
+        <button onClick={() => scanNow.mutate()} disabled={scanNow.isPending || data.scanning} className="glass-2 pill flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] text-ink-2 hover:text-ink disabled:opacity-60">
+          <RefreshCw size={11} className={scanNow.isPending || data.scanning ? "animate-spin" : ""} /> {scanNow.isPending || data.scanning ? "Scanning" : "Scan now"}
+        </button>
+      </div>
+      {list.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 py-8 text-center">
+          <Mascot size={80} />
+          <div className="text-[13.5px]">Nothing unusual since the last scan.</div>
+          <div className="max-w-[460px] text-[12.5px] leading-relaxed text-ink-3">
+            Argus flags liquid coins moving over 8% in a day or 4% in an hour, volume spikes, liquidation bursts, dominance breaks, sector divergence and sentiment regime changes, then investigates on its own.
+          </div>
+        </div>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2">
+          <AnimatePresence initial={false}>
+            {list.map((f) => (
+              <motion.article key={f.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="glass-2 flex flex-col rounded-2xl p-4">
+                <div className="flex items-center gap-2 text-[11px] text-ink-3">
+                  <Severity n={f.severity} />
+                  <span className="pill bg-surface-2 px-2 py-0.5">{KIND_LABEL[f.kind] ?? f.kind}</span>
+                  <span className="ml-auto font-mono">{timeAgo(f.investigatedAt)}</span>
+                </div>
+                <div className="mt-2 flex items-center gap-2">
+                  {f.subject.type === "coin" && <img src={`https://s2.coinmarketcap.com/static/img/coins/32x32/${f.subject.id}.png`} alt="" className="h-5 w-5 rounded-full" />}
+                  <div className="font-display text-[17px] font-medium leading-tight">{f.title}</div>
+                </div>
+                {f.attribution && (
+                  <div className="mt-2 flex flex-wrap gap-1.5 font-mono text-[10.5px]">
+                    <span className="pill bg-surface-2 px-2 py-0.5 text-ink-2">beta {f.attribution.market_component_pct !== null ? pct(f.attribution.market_component_pct, 1) : "—"}</span>
+                    {f.attribution.sector && <span className="pill bg-surface-2 px-2 py-0.5 text-ink-2">{f.attribution.sector.name} {pct(f.attribution.sector.excess_pct, 1)}</span>}
+                    <span className="pill bg-surface-2 px-2 py-0.5 text-ink-2">specific {f.attribution.coin_specific_pct !== null ? pct(f.attribution.coin_specific_pct, 1) : "—"}</span>
+                    <span className="pill bg-gold-dim px-2 py-0.5 text-gold">{f.attribution.read}</span>
+                  </div>
+                )}
+                <Summary text={f.summary} />
+                <div className="mt-auto flex items-center justify-between pt-3">
+                  <span className="font-mono text-[10.5px] text-ink-3">{f.calls} calls · {f.credits} credits</span>
+                  <Link to={`/analyst?q=${encodeURIComponent(f.question)}`} className="inline-flex items-center gap-1 text-[12px] text-gold hover:text-gold-2">
+                    <Sparkles size={12} /> Dig in with Argus <ArrowRight size={12} />
+                  </Link>
+                </div>
+              </motion.article>
+            ))}
+          </AnimatePresence>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AttributionBar({ e }: { e: Explanation }) {
+  const parts = [
+    { label: "Market beta", value: e.market_component_pct ?? 0, color: "#8fb7ff" },
+    { label: e.sector ? `${e.sector.name} sector` : "Sector", value: e.sector?.excess_pct ?? 0, color: "#c99cff" },
+    { label: "Coin-specific", value: e.coin_specific_pct ?? 0, color: "#e7c46a" },
+  ];
+  const scale = Math.max(1, ...parts.map((p) => Math.abs(p.value)), Math.abs(e.coin_change_pct));
+  return (
+    <div className="space-y-2.5">
+      {parts.map((p) => (
+        <div key={p.label}>
+          <div className="mb-1 flex items-center justify-between text-[11.5px]">
+            <span className="text-ink-2">{p.label}</span>
+            <span className="font-mono" style={{ color: p.color }}>{pct(p.value, 2)}</span>
+          </div>
+          <div className="relative h-2 w-full rounded-full bg-surface-2">
+            <div className="absolute inset-y-0 left-1/2 w-px bg-line-2" />
+            <motion.div
+              className="absolute inset-y-0 rounded-full"
+              style={{ background: p.color, left: p.value >= 0 ? "50%" : undefined, right: p.value < 0 ? "50%" : undefined }}
+              initial={{ width: 0 }}
+              animate={{ width: `${(Math.abs(p.value) / scale) * 50}%` }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MoveExplainer() {
+  const movers = useQuery({ queryKey: ["movers"], queryFn: api.movers });
+  const [symbol, setSymbol] = useState<string | null>(null);
+  const [window, setWindow] = useState<"1h" | "24h" | "7d">("24h");
+  const [typed, setTyped] = useState("");
+  const chips = useMemo(() => {
+    if (!movers.data) return [];
+    return [...movers.data.gainers.slice(0, 3), ...movers.data.losers.slice(0, 3)];
+  }, [movers.data]);
+  const active = symbol ?? chips[0]?.symbol ?? "BTC";
+  const { data, isLoading, error } = useQuery({ queryKey: ["explain", active, window], queryFn: () => api.explain(active, window), staleTime: 2 * 60_000 });
+
+  return (
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <div>
+        <div className="mb-2 text-[11.5px] text-ink-3">Pick a mover, or type any symbol.</div>
+        <div className="flex flex-wrap gap-1.5">
+          {chips.map((c) => (
+            <button key={c.id} onClick={() => setSymbol(c.symbol)} className={clsx("pill flex items-center gap-1.5 px-2.5 py-1 text-[12px]", active === c.symbol ? "bg-ink text-bg" : "glass-2 text-ink-2 hover:text-ink")}>
+              <img src={`https://s2.coinmarketcap.com/static/img/coins/32x32/${c.id}.png`} alt="" className="h-4 w-4 rounded-full" />
+              {c.symbol} <Change value={c.quote.percent_change_24h} className={clsx("text-[11px]", active === c.symbol && "text-bg")} />
+            </button>
+          ))}
+        </div>
+        <form onSubmit={(e) => { e.preventDefault(); if (typed.trim()) { setSymbol(typed.trim().toUpperCase()); setTyped(""); } }} className="mt-3 flex gap-2">
+          <div className="glass-2 pill flex flex-1 items-center gap-2 px-3 py-1.5">
+            <Search size={13} className="text-ink-3" />
+            <input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="e.g. HYPE" className="w-full bg-transparent text-[13px] placeholder:text-ink-3 focus:outline-none" />
+          </div>
+          <div className="glass-2 pill flex p-0.5">
+            {(["1h", "24h", "7d"] as const).map((w) => (
+              <button type="button" key={w} onClick={() => setWindow(w)} className={clsx("pill px-2.5 py-1 font-mono text-[11px]", window === w ? "bg-ink text-bg" : "text-ink-2")}>{w}</button>
+            ))}
+          </div>
+        </form>
+        <p className="mt-4 text-[12px] leading-relaxed text-ink-3">
+          Beta comes from 30 daily closes against BTC. Sector is CoinMarketCap's category average. Whatever the two don't explain is coin-specific. A decomposition, not a cause; the analyst adds the narrative.
+        </p>
+      </div>
+      <div className="glass-2 rounded-2xl p-4">
+        {isLoading && <Skeleton className="h-[220px]" />}
+        {error && <div className="text-[12.5px] text-down">Could not explain {active}: {error instanceof Error ? error.message : "unknown error"}</div>}
+        {data && (
+          <>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <img src={`https://s2.coinmarketcap.com/static/img/coins/64x64/${data.id}.png`} alt="" className="h-7 w-7 rounded-full" />
+                  <div className="font-display text-[22px] font-medium leading-none">{data.symbol} <span className={data.coin_change_pct >= 0 ? "text-up" : "text-down"}>{pct(data.coin_change_pct, 2)}</span></div>
+                </div>
+                <div className="mt-1 font-mono text-[11px] text-ink-3">{usd(data.price)} · cap {usd(data.market_cap, { compact: true })} · vol {usd(data.volume_24h, { compact: true })} · {data.window}</div>
+              </div>
+              <span className="pill bg-gold-dim px-2.5 py-1 text-[11px] text-gold">{data.read}</span>
+            </div>
+            <div className="mt-4"><AttributionBar e={data} /></div>
+            <div className="mt-3 grid grid-cols-3 gap-2 font-mono text-[11px]">
+              <div className="rounded-xl bg-surface-2 p-2"><div className="text-ink-3">BTC {data.window}</div><div>{pct(data.btc_change_pct, 2)}</div></div>
+              <div className="rounded-xl bg-surface-2 p-2"><div className="text-ink-3">beta · corr</div><div>{data.beta_to_btc ?? "—"} · {data.correlation_to_btc ?? "—"}</div></div>
+              <div className="rounded-xl bg-surface-2 p-2"><div className="text-ink-3">liq 24h</div><div>{data.leverage?.coin_liquidations_usd ? `${usd(data.leverage.coin_liquidations_usd, { compact: true })} · ${data.leverage.long_share_pct}% L` : "—"}</div></div>
+            </div>
+            <p className="mt-3 text-[12.5px] leading-relaxed text-ink-2">{data.read_text}</p>
+            <Link to={`/analyst?q=${encodeURIComponent(`Why is ${data.symbol} moving today? Use explain_move and add the narrative.`)}`} className="pill mt-4 inline-flex items-center gap-1.5 bg-gold px-3.5 py-1.5 text-[12.5px] font-medium text-bg hover:bg-gold-2">
+              <Sparkles size={13} /> Ask Argus why <ArrowRight size={13} />
+            </Link>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function Spotlight() {
+  const [tab, setTab] = useState<"noticed" | "explain">("noticed");
+  const tabs = [
+    { key: "noticed" as const, label: "Argus noticed", icon: Radar, hint: "What the agent caught on its own" },
+    { key: "explain" as const, label: "Move explainer", icon: SplitSquareHorizontal, hint: "Why a coin moved, in numbers" },
+  ];
+  return (
+    <section className="glass hud p-5 sm:p-6">
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+        <div className="glass-2 pill flex p-1">
+          {tabs.map((t) => (
+            <button key={t.key} onClick={() => setTab(t.key)} className={clsx("pill relative flex items-center gap-2 px-4 py-2 text-[13px] font-medium transition-colors", tab === t.key ? "text-bg" : "text-ink-2 hover:text-ink")}>
+              {tab === t.key && <motion.span layoutId="spot-tab" className="absolute inset-0 rounded-full bg-gold" transition={{ type: "spring", stiffness: 400, damping: 32 }} />}
+              <t.icon size={14} className="relative" /> <span className="relative">{t.label}</span>
+            </button>
+          ))}
+        </div>
+        <div className="text-[12px] text-ink-3">{tabs.find((t) => t.key === tab)?.hint}</div>
+      </div>
+      <AnimatePresence mode="wait">
+        <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }}>
+          {tab === "noticed" ? <NoticedFeed /> : <MoveExplainer />}
+        </motion.div>
+      </AnimatePresence>
+    </section>
+  );
+}

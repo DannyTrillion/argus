@@ -9,6 +9,7 @@ import { HeroChart } from "../components/home/HeroChart";
 import { LiquidationsCard } from "../components/home/Liquidations";
 import { Movers } from "../components/home/Movers";
 import { BriefDeck } from "../components/home/BriefDeck";
+import { Spotlight } from "../components/home/Spotlight";
 import { Card, CardTitle } from "../components/ui/Card";
 import { Gauge } from "../components/ui/Gauge";
 import { Skeleton } from "../components/ui/Skeleton";
@@ -52,6 +53,10 @@ export default function Home() {
         ) : (
           Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-[132px]" />)
         )}
+      </motion.div>
+
+      <motion.div {...fade} transition={{ duration: 0.4, delay: 0.08 }} data-tour="spotlight">
+        <Spotlight />
       </motion.div>
 
       <motion.div {...fade} transition={{ duration: 0.4, delay: 0.1 }} className="grid gap-4 lg:grid-cols-3">
