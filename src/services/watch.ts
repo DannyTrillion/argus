@@ -4,7 +4,7 @@
  * to investigate and writes a short finding. Bounded by per-signal cooldowns and a
  * daily investigation cap so it cannot run away with credits.
  */
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync, renameSync, existsSync, copyFileSync } from "node:fs";
 import { dirname } from "node:path";
 import type { BetaMessageParam } from "@anthropic-ai/sdk/resources/beta/messages";
 import * as market from "./market.js";
@@ -61,9 +61,19 @@ let scanning: Promise<Finding[]> | null = null;
 
 const STABLE = /^(USDT|USDC|DAI|USDE|USD1|PYUSD|FDUSD|TUSD|USDS|USDG)$/i;
 
+function readState(path: string): State | null {
+  try {
+    return JSON.parse(readFileSync(path, "utf8")) as State;
+  } catch {
+    return null;
+  }
+}
+
 function load(): State {
   try {
-    const s = JSON.parse(readFileSync(FILE, "utf8")) as State;
+    // Fall back to the last good copy if the main file is missing or half-written.
+    const s = readState(FILE) ?? readState(FILE + ".bak");
+    if (!s) throw new Error("no state");
     if (Array.isArray(s.findings)) {
       // Stablecoin findings predate the exclusion rule; drop them on load.
       const findings = s.findings.filter((f) => !(f.subject.type === "coin" && STABLE.test(f.subject.symbol))).slice(0, MAX_FINDINGS);
@@ -76,7 +86,11 @@ function load(): State {
 function save(): void {
   try {
     mkdirSync(dirname(FILE), { recursive: true });
-    writeFileSync(FILE, JSON.stringify(state));
+    // Atomic: write a temp file, keep the previous version as .bak, then rename into place.
+    const tmp = FILE + ".tmp";
+    writeFileSync(tmp, JSON.stringify(state));
+    if (existsSync(FILE)) copyFileSync(FILE, FILE + ".bak");
+    renameSync(tmp, FILE);
   } catch (err) {
     console.warn("[watch] could not persist state:", err instanceof Error ? err.message : err);
   }
