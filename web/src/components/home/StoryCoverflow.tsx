@@ -89,11 +89,11 @@ function Article({ s, onClose }: { s: Story; onClose: () => void }) {
   return (
     <div className="relative overflow-hidden rounded-[22px] border border-line p-6 sm:p-8" style={{ background: "linear-gradient(180deg, #17171a 0%, #101012 100%)", boxShadow: `0 0 0 1px rgba(${a.hex},0.28), 0 40px 90px -40px rgba(0,0,0,0.95)` }}>
       <div className="pointer-events-none absolute inset-0" style={{ background: `radial-gradient(700px 300px at 20% 0%, rgba(${a.hex},0.12), transparent 70%)` }} />
-      <button onClick={onClose} className="glass-2 absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full text-ink-2 hover:text-ink" aria-label="Close"><X size={15} /></button>
+      <button type="button" onClick={onClose} className="glass-2 absolute right-3 top-3 z-20 flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:text-ink sm:right-4 sm:top-4 sm:h-10 sm:w-10" aria-label="Close"><X size={17} /></button>
       <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
-        <div>
-          <div className={clsx("text-[11px] uppercase tracking-wider", a.text)}>{s.kicker} · <span className="font-mono normal-case text-ink-3">{timeAgo(s.at)}</span></div>
-          <h3 className="font-display mt-2 text-[28px] font-medium leading-[1.1] tracking-tight sm:text-[34px]">{s.headline}</h3>
+        <div className="min-w-0">
+          <div className={clsx("pr-12 text-[11px] uppercase tracking-wider", a.text)}>{s.kicker} · <span className="font-mono normal-case text-ink-3">{timeAgo(s.at)}</span></div>
+          <h3 className="font-display mt-2 pr-12 text-[26px] font-medium leading-[1.1] tracking-tight sm:text-[34px] lg:pr-0">{s.headline}</h3>
           <p className="mt-2 text-[14px] leading-relaxed text-ink-2">{s.deck}</p>
           <Markdown text={s.body} className="mt-5 text-[14px] leading-relaxed" />
           <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -102,6 +102,7 @@ function Article({ s, onClose }: { s: Story; onClose: () => void }) {
             </Link>
             {s.meta && <span className="font-mono text-[11px] text-ink-3">{s.meta.calls} API calls · {s.meta.credits} credits</span>}
           </div>
+          <button type="button" onClick={onClose} className="glass-2 pill mt-5 inline-flex items-center gap-1.5 px-3.5 py-1.5 text-[12.5px] text-ink-2 hover:text-ink lg:hidden"><X size={13} /> Back to stories</button>
         </div>
         <div className="space-y-4">
           <div className="flex justify-center"><Motif s={s} /></div>
@@ -132,6 +133,15 @@ function Article({ s, onClose }: { s: Story; onClose: () => void }) {
   );
 }
 
+function useEscape(active: boolean, onClose: () => void) {
+  useEffect(() => {
+    if (!active) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [active, onClose]);
+}
+
 export function StoryCoverflow() {
   const { data, isLoading } = useQuery({ queryKey: ["stream"], queryFn: api.stream, refetchInterval: 60_000 });
   const stories = useMemo(() => data?.stories ?? [], [data]);
@@ -147,6 +157,7 @@ export function StoryCoverflow() {
   const touch = useRef<number | null>(null);
 
   useEffect(() => { if (i >= n && n > 0) setI(0); }, [n, i]);
+  useEscape(open !== null, () => setOpen(null));
   useEffect(() => {
     if (hover || open || n < 2) return;
     const t = setInterval(() => setI((x) => (x + 1) % n), STEP_MS);
