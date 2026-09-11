@@ -36,13 +36,7 @@ const STEPS: Step[] = [
   {
     target: ["spotlight"],
     title: "What Argus caught on its own",
-    body: "Every ten minutes the agent scans for unusual moves, volume spikes, liquidation bursts and sector breaks, investigates them itself, and posts a finding here. The second tab splits any move into market beta, sector and coin-specific.",
-    route: "/",
-  },
-  {
-    target: ["brief"],
-    title: "A brief nobody had to ask for",
-    body: "Every four hours the agent reads the market through a dozen API calls and writes five cards: backdrop, movers, sector rotation, leverage, watch list. Swipe or let it play.",
+    body: "Every ten minutes the agent scans for unusual moves, volume spikes, liquidation bursts and sector breaks, investigates them itself, and writes a story. Every four hours it adds a five-part brief. Read more opens the article; the second tab splits any move into market beta, sector and coin-specific.",
     route: "/",
   },
   {

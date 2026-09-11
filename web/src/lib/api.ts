@@ -98,6 +98,13 @@ export interface Finding {
   severity: 1 | 2 | 3; metric: number; observedAt: string; summary: string; question: string; attribution: Explanation | null; calls: number; credits: number; investigatedAt: string;
 }
 export interface Findings { findings: Finding[]; lastScanAt: string | null; nextScanAt: string | null; intervalMinutes: number; investigationsToday: number; dailyCap: number; scanning: boolean }
+export interface Story {
+  id: string; type: "finding" | "brief"; kicker: string; headline: string; deck: string; body: string;
+  accent: "gold" | "up" | "down" | "blue";
+  subject: { type: "coin"; id: number; symbol: string } | { type: "topic"; key: string } | { type: "market" };
+  question: string; at: string; severity?: number; attribution?: Explanation | null; meta?: { calls: number; credits: number };
+}
+export interface Stream { stories: Story[]; lastScanAt: string | null; intervalMinutes: number; scanning: boolean }
 export interface Brief { text: string; generatedAt: string; model: string; calls: number; credits: number; durationMs: number }
 export interface CallRecord { id: number; endpoint: string; query: Record<string, string>; httpStatus: number; creditCount: number; elapsedMs: number; cached: boolean; at: string; preview: string }
 
@@ -134,6 +141,7 @@ export const api = {
   status: () => get<Status>("/status"),
   explain: (symbol: string, window: "1h" | "24h" | "7d" = "24h") => get<Explanation>(`/explain?symbol=${encodeURIComponent(symbol)}&window=${window}`),
   findings: () => get<Findings>("/findings"),
+  stream: () => get<Stream>("/stream"),
   scanNow: async () => {
     const res = await fetch("/api/watch/scan", { method: "POST" });
     if (!res.ok) throw new ApiError(res.status, res.statusText);

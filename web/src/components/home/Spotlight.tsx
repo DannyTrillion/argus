@@ -10,102 +10,26 @@ import { Radar, SplitSquareHorizontal, Sparkles, RefreshCw, ArrowRight, Search }
 import clsx from "clsx";
 import { api, type Explanation } from "../../lib/api";
 import { usd, pct, timeAgo } from "../../lib/format";
-import { Markdown } from "../ui/Markdown";
-import { Mascot } from "../ui/Mascot";
 import { Skeleton } from "../ui/Skeleton";
 import { Change } from "../ui/Change";
-
-const KIND_LABEL: Record<string, string> = {
-  coin_move: "Price move",
-  volume_spike: "Volume spike",
-  liquidation_burst: "Liquidations",
-  dominance_break: "Dominance",
-  sector_divergence: "Sector",
-  sentiment_shift: "Sentiment",
-};
-
-function Severity({ n }: { n: number }) {
-  return (
-    <span className="flex items-center gap-0.5" title={`severity ${n}/3`}>
-      {[1, 2, 3].map((k) => <span key={k} className={clsx("h-1.5 w-1.5 rounded-full", k <= n ? (n === 3 ? "bg-down" : "bg-gold") : "bg-line-2")} />)}
-    </span>
-  );
-}
-
-function Summary({ text }: { text: string }) {
-  const [open, setOpen] = useState(false);
-  const long = text.length > 320;
-  return (
-    <div>
-      <div className={clsx("relative", !open && long && "max-h-[6.2em] overflow-hidden")}>
-        <Markdown text={text} className="mt-2 text-[12.5px] leading-relaxed [&_p]:mb-1.5" />
-        {!open && long && <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[#141416] to-transparent" />}
-      </div>
-      {long && <button onClick={() => setOpen((o) => !o)} className="mt-1 text-[11.5px] text-ink-3 hover:text-ink">{open ? "Show less" : "Read more"}</button>}
-    </div>
-  );
-}
+import { StoryCoverflow } from "./StoryCoverflow";
 
 function NoticedFeed() {
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: ["findings"], queryFn: api.findings, refetchInterval: 60_000 });
-  const scanNow = useMutation({ mutationFn: api.scanNow, onSuccess: (d) => qc.setQueryData(["findings"], d) });
-
-  if (isLoading || !data) return <Skeleton className="h-[300px]" />;
-  const list = data.findings.slice(0, 6);
+  const { data } = useQuery({ queryKey: ["findings"], queryFn: api.findings, refetchInterval: 60_000 });
+  const scanNow = useMutation({ mutationFn: api.scanNow, onSuccess: (d) => { qc.setQueryData(["findings"], d); void qc.invalidateQueries({ queryKey: ["stream"] }); } });
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-[11.5px] text-ink-3">
         <span>
-          Watching 200 coins, sectors, liquidations, dominance and sentiment · every {data.intervalMinutes} min
-          {data.lastScanAt ? ` · last scan ${timeAgo(data.lastScanAt)}` : ""}
+          Watching 200 coins, sectors, liquidations, dominance and sentiment · every {data?.intervalMinutes ?? 10} min
+          {data?.lastScanAt ? ` · last scan ${timeAgo(data.lastScanAt)}` : ""} · brief every 4h
         </span>
-        <button onClick={() => scanNow.mutate()} disabled={scanNow.isPending || data.scanning} className="glass-2 pill flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] text-ink-2 hover:text-ink disabled:opacity-60">
-          <RefreshCw size={11} className={scanNow.isPending || data.scanning ? "animate-spin" : ""} /> {scanNow.isPending || data.scanning ? "Scanning" : "Scan now"}
+        <button onClick={() => scanNow.mutate()} disabled={scanNow.isPending || data?.scanning} className="glass-2 pill flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] text-ink-2 hover:text-ink disabled:opacity-60">
+          <RefreshCw size={11} className={scanNow.isPending || data?.scanning ? "animate-spin" : ""} /> {scanNow.isPending || data?.scanning ? "Scanning" : "Scan now"}
         </button>
       </div>
-      {list.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-8 text-center">
-          <Mascot size={80} />
-          <div className="text-[13.5px]">Nothing unusual since the last scan.</div>
-          <div className="max-w-[460px] text-[12.5px] leading-relaxed text-ink-3">
-            Argus flags liquid coins moving over 8% in a day or 4% in an hour, volume spikes, liquidation bursts, dominance breaks, sector divergence and sentiment regime changes, then investigates on its own.
-          </div>
-        </div>
-      ) : (
-        <div className="grid gap-3 md:grid-cols-2">
-          <AnimatePresence initial={false}>
-            {list.map((f) => (
-              <motion.article key={f.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="glass-2 flex flex-col rounded-2xl p-4">
-                <div className="flex items-center gap-2 text-[11px] text-ink-3">
-                  <Severity n={f.severity} />
-                  <span className="pill bg-surface-2 px-2 py-0.5">{KIND_LABEL[f.kind] ?? f.kind}</span>
-                  <span className="ml-auto font-mono">{timeAgo(f.investigatedAt)}</span>
-                </div>
-                <div className="mt-2 flex items-center gap-2">
-                  {f.subject.type === "coin" && <img src={`https://s2.coinmarketcap.com/static/img/coins/32x32/${f.subject.id}.png`} alt="" className="h-5 w-5 rounded-full" />}
-                  <div className="font-display text-[17px] font-medium leading-tight">{f.title}</div>
-                </div>
-                {f.attribution && (
-                  <div className="mt-2 flex flex-wrap gap-1.5 font-mono text-[10.5px]">
-                    <span className="pill bg-surface-2 px-2 py-0.5 text-ink-2">beta {f.attribution.market_component_pct !== null ? pct(f.attribution.market_component_pct, 1) : "—"}</span>
-                    {f.attribution.sector && <span className="pill bg-surface-2 px-2 py-0.5 text-ink-2">{f.attribution.sector.name} {pct(f.attribution.sector.excess_pct, 1)}</span>}
-                    <span className="pill bg-surface-2 px-2 py-0.5 text-ink-2">specific {f.attribution.coin_specific_pct !== null ? pct(f.attribution.coin_specific_pct, 1) : "—"}</span>
-                    <span className="pill bg-gold-dim px-2 py-0.5 text-gold">{f.attribution.read}</span>
-                  </div>
-                )}
-                <Summary text={f.summary} />
-                <div className="mt-auto flex items-center justify-between pt-3">
-                  <span className="font-mono text-[10.5px] text-ink-3">{f.calls} calls · {f.credits} credits</span>
-                  <Link to={`/analyst?q=${encodeURIComponent(f.question)}`} className="inline-flex items-center gap-1 text-[12px] text-gold hover:text-gold-2">
-                    <Sparkles size={12} /> Dig in with Argus <ArrowRight size={12} />
-                  </Link>
-                </div>
-              </motion.article>
-            ))}
-          </AnimatePresence>
-        </div>
-      )}
+      <StoryCoverflow />
     </div>
   );
 }

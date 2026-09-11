@@ -36,3 +36,14 @@ test("detect is quiet on a calm market", () => {
   const s = detect({ coins: [coin(1, "A", 1), coin(2, "B", -2)], overview: overview(), sectors: [{ id: "x", name: "DeFi", num_tokens: 50, market_cap: 6e9, market_cap_change: -1 }], lastFearGreed: 60 });
   assert.equal(s.length, 0);
 });
+
+test("splitHeadline parses headline, deck and body, with fallback", async () => {
+  const { splitHeadline } = await import("../src/services/watch.ts");
+  const r = splitHeadline("Headline: Zcash slides as longs get flushed\nDeck: ZEC fell 9.7% while $28M of longs were liquidated.\n\nZEC fell to $1,099…", "ZEC -9.7% in 24h");
+  assert.equal(r.headline, "Zcash slides as longs get flushed");
+  assert.ok(r.deck.startsWith("ZEC fell 9.7%"));
+  assert.ok(r.body.startsWith("ZEC fell to"));
+  const f = splitHeadline("Just prose.", "Fallback title");
+  assert.equal(f.headline, "Fallback title");
+  assert.equal(f.body, "Just prose.");
+});

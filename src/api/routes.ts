@@ -9,6 +9,7 @@ import { currentBrief, getBrief, refreshBrief } from "../services/brief.js";
 import { status } from "../services/status.js";
 import { explainMove, type Window } from "../services/explain.js";
 import { findings, scan } from "../services/watch.js";
+import { stream } from "../services/stream.js";
 
 export const api = new Hono();
 
@@ -77,3 +78,6 @@ api.post("/watch/scan", async (c) => {
   const fresh = await scan();
   return c.json({ fresh, ...findings() });
 });
+
+// Unified story stream for the Home carousel.
+api.get("/stream", (c) => c.json(stream()));

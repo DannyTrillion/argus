@@ -8,7 +8,6 @@ import { StatTile } from "../components/home/StatTile";
 import { HeroChart } from "../components/home/HeroChart";
 import { LiquidationsCard } from "../components/home/Liquidations";
 import { Movers } from "../components/home/Movers";
-import { BriefDeck } from "../components/home/BriefDeck";
 import { Spotlight } from "../components/home/Spotlight";
 import { Card, CardTitle } from "../components/ui/Card";
 import { Gauge } from "../components/ui/Gauge";
@@ -59,9 +58,8 @@ export default function Home() {
         <Spotlight />
       </motion.div>
 
-      <motion.div {...fade} transition={{ duration: 0.4, delay: 0.1 }} className="grid gap-4 lg:grid-cols-3">
-        <div data-tour="chart" className="lg:col-span-2"><HeroChart /></div>
-        <div data-tour="brief" className="min-h-[540px] lg:min-h-[420px]"><BriefDeck /></div>
+      <motion.div {...fade} transition={{ duration: 0.4, delay: 0.1 }} data-tour="chart" className="grid gap-4">
+        <HeroChart />
       </motion.div>
 
       <motion.div {...fade} transition={{ duration: 0.4, delay: 0.15 }} className="grid gap-4 lg:grid-cols-3">

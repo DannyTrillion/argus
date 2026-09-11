@@ -27,6 +27,10 @@ export interface Signal {
 
 export interface Finding extends Signal {
   id: string;
+  /** Poster-style headline, max ~8 words, written by the agent. */
+  headline: string;
+  /** One-line deck under the headline. */
+  deck: string;
   summary: string;
   question: string;
   attribution: Explanation | null;
@@ -55,10 +59,16 @@ let state: State = load();
 let timer: NodeJS.Timeout | null = null;
 let scanning: Promise<Finding[]> | null = null;
 
+const STABLE = /^(USDT|USDC|DAI|USDE|USD1|PYUSD|FDUSD|TUSD|USDS|USDG)$/i;
+
 function load(): State {
   try {
     const s = JSON.parse(readFileSync(FILE, "utf8")) as State;
-    if (Array.isArray(s.findings)) return { ...s, findings: s.findings.slice(0, MAX_FINDINGS) };
+    if (Array.isArray(s.findings)) {
+      // Stablecoin findings predate the exclusion rule; drop them on load.
+      const findings = s.findings.filter((f) => !(f.subject.type === "coin" && STABLE.test(f.subject.symbol))).slice(0, MAX_FINDINGS);
+      return { ...s, findings };
+    }
   } catch { /* fresh */ }
   return { findings: [], cooldowns: {}, lastScanAt: null, nextScanAt: null, investigationsToday: { day: "", count: 0 }, lastFearGreed: null };
 }
@@ -93,7 +103,7 @@ export function detect(input: {
     const liquid = cap >= 500e6 && vol >= 50e6;
     if (!liquid) continue;
     // Stablecoins do not reprice; their volume swings are flow, not signal.
-    if ((c.tags ?? []).some((t) => /stablecoin/i.test(t)) || /^(USDT|USDC|DAI|USDE|USD1|PYUSD|FDUSD|TUSD|USDS|USDG)$/i.test(c.symbol)) continue;
+    if ((c.tags ?? []).some((t) => /stablecoin/i.test(t)) || STABLE.test(c.symbol)) continue;
     const p24 = c.quote.percent_change_24h ?? 0;
     const p1 = c.quote.percent_change_1h ?? 0;
     const subject = { type: "coin" as const, id: c.id, symbol: c.symbol, name: c.name };
@@ -161,17 +171,76 @@ async function investigate(s: Signal): Promise<Finding> {
   const prompt =
     `You are investigating an anomaly Argus detected automatically. Signal: ${s.title}. ${s.detail}` +
     (attribution ? ` Attribution already computed: ${attribution.read_text}` : "") +
-    ` Write the finding in under 110 words: what happened, the most likely read (market beta, sector rotation, coin-specific, leverage), and one thing to watch. Numbers from tools only. No headings, no follow-up block needed.`;
+    ` Respond in exactly this shape and nothing else:\nHeadline: <a punchy headline of at most 8 words, no ticker-only titles, like a good financial news headline>\nDeck: <one sentence of at most 22 words with the key number>\n\n<the finding in under 110 words: what happened, the most likely read (market beta, sector rotation, coin-specific, leverage), and one thing to watch. Numbers from tools only. No headings.>`;
   const messages: BetaMessageParam[] = [{ role: "user", content: prompt }];
-  let summary = "";
+  let raw = "";
   try {
     const r = await runAgent({ messages, maxIterations: 8, onEvent: (e) => { if (e.type === "api_call") { calls += 1; credits += e.record.creditCount; } } });
-    summary = r.text.replace(/<followups>[\s\S]*$/i, "").trim();
+    raw = r.text.replace(/<followups>[\s\S]*$/i, "").trim();
   } catch (err) {
-    summary = `Investigation failed: ${err instanceof Error ? err.message : String(err)}`;
+    raw = `Investigation failed: ${err instanceof Error ? err.message : String(err)}`;
+  }
+  let { headline, deck, body } = splitHeadline(raw, s.title);
+  if (headline === s.title || !deck) {
+    const r = await headlineFor(s.title, body);
+    if (r) ({ headline, deck } = r);
+    else deck = deck || s.detail;
   }
   void started;
-  return { ...s, id: crypto.randomUUID(), summary, question: questionFor(s), attribution, calls, credits, investigatedAt: new Date().toISOString() };
+  return { ...s, id: crypto.randomUUID(), headline, deck, summary: body, question: questionFor(s), attribution, calls, credits, investigatedAt: new Date().toISOString() };
+}
+
+/** Parse "Headline: …\nDeck: …\n\nbody". Falls back to the signal title. Exported for tests. */
+export function splitHeadline(raw: string, fallback: string): { headline: string; deck: string; body: string } {
+  const h = raw.match(/^\s*\**Headline\**:\s*(.+?)\s*$/im);
+  const d = raw.match(/^\s*\**Deck\**:\s*(.+?)\s*$/im);
+  let body = raw;
+  if (h) body = body.replace(h[0], "");
+  if (d) body = body.replace(d[0], "");
+  return { headline: (h?.[1] ?? fallback).replace(/^["“]|["”]$/g, "").trim(), deck: (d?.[1] ?? "").replace(/^["“]|["”]$/g, "").trim(), body: body.trim() };
+}
+
+/** Cheap, tool-free call that turns a finding into a headline and a deck. */
+async function headlineFor(title: string, summary: string): Promise<{ headline: string; deck: string } | null> {
+  try {
+    const { default: Anthropic } = await import("@anthropic-ai/sdk");
+    const client = new Anthropic();
+    const res = await client.messages.create({
+      model: config.model,
+      max_tokens: 200,
+      messages: [{ role: "user", content: `Write a headline (max 8 words, financial-news style, not just a ticker and a number) and a one-sentence deck (max 22 words, include the key number) for this finding titled "${title}":\n\n${summary}\n\nRespond exactly as two lines:\nHeadline: ...\nDeck: ...` }],
+    });
+    const text = res.content.filter((b): b is Extract<typeof b, { type: "text" }> => b.type === "text").map((b) => b.text).join("");
+    const r = splitHeadline(text, title);
+    if (r.headline === title || !r.deck) return null;
+    return { headline: r.headline, deck: r.deck };
+  } catch (err) {
+    console.warn("[watch] headline call failed:", err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+
+function needsHeadline(f: Finding): boolean {
+  return !f.headline || f.headline === f.title || !f.deck;
+}
+
+/** Give findings without a real headline one. Runs at boot and after each scan. */
+export async function ensureHeadlines(): Promise<number> {
+  const missing = state.findings.filter(needsHeadline);
+  let n = 0;
+  for (const f of missing) {
+    const r = await headlineFor(f.title, f.summary);
+    if (r) {
+      f.headline = r.headline;
+      f.deck = r.deck;
+      n += 1;
+    } else if (!f.headline) {
+      f.headline = f.title;
+      f.deck = f.deck || f.detail;
+    }
+  }
+  if (missing.length) save();
+  return n;
 }
 
 export function scan(): Promise<Finding[]> {
@@ -198,8 +267,9 @@ export function scan(): Promise<Finding[]> {
         state.findings = [f, ...state.findings].slice(0, MAX_FINDINGS);
         save();
       }
-      // Prune old cooldowns.
+      // Prune old cooldowns, then make sure every finding has a real headline.
       for (const [k, v] of Object.entries(state.cooldowns)) if (now - Date.parse(v) > 2 * COOLDOWN_MS) delete state.cooldowns[k];
+      await ensureHeadlines();
     } catch (err) {
       console.error("[watch] scan failed:", err instanceof Error ? err.message : err);
     } finally {
@@ -233,7 +303,8 @@ export function startWatch(): void {
     return;
   }
   if (config.keyless) return;
-  // First scan shortly after boot so the feed is not empty for long, then on the interval.
+  // Backfill headlines for older findings, then scan shortly after boot, then on the interval.
+  void ensureHeadlines().then((n) => { if (n) console.log(`[watch] backfilled ${n} headline(s)`); });
   setTimeout(() => void scan(), 20_000).unref();
   timer = setInterval(() => void scan(), INTERVAL_MS);
   timer.unref();
