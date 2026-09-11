@@ -203,7 +203,8 @@ export function BriefDeck({ className }: { className?: string }) {
                 <s.topic.icon size={12} /> {s.topic.label}
               </div>
               <div className="font-display mt-2 text-[30px] font-medium leading-none tracking-tight tabular">{headline(s.topic.key)}</div>
-              <Markdown text={s.section!.body} className="mt-3 text-[13px] leading-relaxed [&_p]:mb-1.5 [&_ul]:mb-0 [&_li]:my-0.5" />
+              {s.section!.headline && <div className="font-display mt-2 text-[16px] font-medium leading-snug text-ink">{s.section!.headline}</div>}
+              <Markdown text={s.section!.body} className="mt-2 text-[13px] leading-relaxed [&_p]:mb-1.5 [&_ul]:mb-0 [&_li]:my-0.5" />
               <div className="mt-4 flex items-center justify-between">
                 <span className={clsx("inline-flex items-center gap-1.5 text-[12px]", a.text)}><Sparkles size={12} /> {s.topic.question}</span>
                 <div className="flex gap-1.5">
