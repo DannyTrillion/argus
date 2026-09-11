@@ -74,7 +74,7 @@ export function Composer({ busy, onSend, onStop, autoFocus }: { busy: boolean; o
             }
             if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); }
           }}
-          placeholder="Ask about any coin, sector, or the whole market. Type @ to mention a coin."
+          placeholder={typeof window !== "undefined" && window.innerWidth < 640 ? "Ask Argus anything · @ mentions a coin" : "Ask about any coin, sector, or the whole market. Type @ to mention a coin."}
           rows={1}
           className="max-h-40 min-h-[40px] flex-1 resize-none bg-transparent py-2 text-[14px] placeholder:text-ink-3 focus:outline-none"
         />

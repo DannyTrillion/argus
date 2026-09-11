@@ -98,7 +98,7 @@ function MobileTabBar({ onSearch }: { onSearch: () => void }) {
   const nav = useNavigate();
   const isActive = (to: string, end: boolean) => (end ? loc.pathname === to : loc.pathname.startsWith(to));
   return (
-    <div data-tour="nav-mobile" className="fixed inset-x-3 z-30 md:hidden" style={{ bottom: "max(12px, env(safe-area-inset-bottom))" }}>
+    <motion.div layoutId="dock" data-tour="nav-mobile" className="fixed inset-x-3 z-30 lg:hidden" style={{ bottom: "max(12px, env(safe-area-inset-bottom))" }} transition={{ type: "spring", stiffness: 260, damping: 30 }}>
       <nav
         className="relative flex items-end justify-between rounded-[28px] border border-line px-2 pb-2 pt-2"
         style={{
@@ -136,7 +136,7 @@ function MobileTabBar({ onSearch }: { onSearch: () => void }) {
           );
         })}
       </nav>
-    </div>
+    </motion.div>
   );
 }
 
@@ -146,15 +146,18 @@ export function Shell() {
   const [alertsOpen, setAlertsOpen] = useState(false);
   const { alerts } = useAlerts();
   const armed = alerts.filter((a) => !a.triggeredAt).length;
+  const loc = useLocation();
+  // On phones the Analyst takes over the whole screen: no global header, the tab bar becomes the composer.
+  const analyst = loc.pathname.startsWith("/analyst");
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-[1440px] flex-col overflow-x-hidden px-4 pb-[calc(112px+env(safe-area-inset-bottom))] pt-4 sm:px-6 md:pb-8 lg:px-8">
+    <div className={clsx("mx-auto flex min-h-full w-full max-w-[1440px] flex-col overflow-x-hidden px-4 pt-4 sm:px-6 lg:px-8", analyst ? "pb-[calc(96px+env(safe-area-inset-bottom))] lg:pb-6" : "pb-[calc(112px+env(safe-area-inset-bottom))] md:pb-8")}>
       <Tour open={tour.open && !palette.open} onClose={tour.finish} />
       <Palette open={palette.open} onClose={() => palette.setOpen(false)} />
       <AlertsPanel open={alertsOpen} onClose={() => setAlertsOpen(false)} />
       <AlertsWatcher />
-      <header className="mb-6 flex min-w-0 items-center gap-3 sm:gap-4">
+      <header className={clsx("mb-6 min-w-0 items-center gap-3 sm:gap-4", analyst ? "hidden lg:flex" : "flex")}>
         <Logo />
-        <nav data-tour="nav" className="glass-2 pill mx-auto hidden items-center gap-1 p-1 md:flex">
+        <nav data-tour="nav" className="glass-2 pill mx-auto hidden items-center gap-1 p-1 lg:flex">
           {NAV.map((n) => (
             <NavLink
               key={n.to}
@@ -188,7 +191,7 @@ export function Shell() {
       <main className="flex-1">
         <Outlet />
       </main>
-      <MobileTabBar onSearch={() => palette.setOpen(true)} />
+      {!analyst && <MobileTabBar onSearch={() => palette.setOpen(true)} />}
     </div>
   );
 }

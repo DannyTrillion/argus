@@ -109,8 +109,8 @@ export function HistoryList({ activeId, onOpen, onNew }: { activeId: string; onO
 
 export function Rail({ latest, busy, activeId, onOpen, onNew }: { latest: ChatMessage | null; busy: boolean; activeId: string; onOpen: (id: string) => void; onNew: () => void }) {
   return (
-    <aside className="hidden lg:block">
-      <div className="sticky top-4 space-y-3">
+    <aside className="hidden min-h-0 lg:block">
+      <div className="scroll-thin h-full space-y-3 overflow-y-auto pr-1">
         <Section title={busy ? "Argus is working" : "How Argus worked"} right={busy ? <span className="flex items-center gap-1.5 font-mono text-[10.5px] text-gold"><span className="h-1.5 w-1.5 rounded-full bg-gold" /> live</span> : null}>
           {latest ? <WorkingSteps m={latest} live={busy} /> : <div className="flex items-center gap-3 text-[12.5px] text-ink-3"><Mascot size={40} glow={false} /> Ask something and watch each step appear here.</div>}
         </Section>
