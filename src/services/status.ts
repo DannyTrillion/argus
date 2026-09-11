@@ -7,6 +7,7 @@ import { CmcApiError } from "../cmc/http.js";
 import { memo, MINUTE } from "../api/cache.js";
 import { config } from "../config.js";
 import { currentBrief } from "./brief.js";
+import { getSettings } from "./settings.js";
 
 export interface Capability {
   name: string;
@@ -48,6 +49,8 @@ export function status() {
     const brief = currentBrief();
     return {
       model: config.model,
+      automationModel: config.automationModel,
+      automationPaused: getSettings().automationPaused,
       keyless: config.keyless,
       plan: key?.plan ?? null,
       usage: key?.usage ?? null,

@@ -10,6 +10,7 @@ import { status } from "../services/status.js";
 import { explainMove, type Window } from "../services/explain.js";
 import { findings, scan } from "../services/watch.js";
 import { stream } from "../services/stream.js";
+import { getSettings, setAutomationPaused } from "../services/settings.js";
 
 export const api = new Hono();
 
@@ -81,3 +82,10 @@ api.post("/watch/scan", async (c) => {
 
 // Unified story stream for the Home carousel.
 api.get("/stream", (c) => c.json(stream()));
+
+// Automation switch: pauses the scheduled brief and the watch loop (manual runs still work).
+api.get("/automation", (c) => c.json({ ...getSettings(), analystModel: config.model, automationModel: config.automationModel }));
+api.post("/automation", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as { paused?: boolean };
+  return c.json({ ...setAutomationPaused(Boolean(body.paused)), analystModel: config.model, automationModel: config.automationModel });
+});

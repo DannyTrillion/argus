@@ -17,8 +17,10 @@ export const config = {
   cmcBaseUrl:
     process.env.CMC_BASE_URL?.trim() ||
     (cmcKey === "" ? "https://pro-api.coinmarketcap.com/public-api" : "https://pro-api.coinmarketcap.com"),
-  /** Claude model used by the agent. */
+  /** Claude model used by the interactive analyst. */
   model: process.env.ARGUS_MODEL?.trim() || "claude-opus-5",
+  /** Cheaper model for unattended work (briefs, investigations, headlines). */
+  automationModel: process.env.ARGUS_AUTOMATION_MODEL?.trim() || "claude-sonnet-5",
   port: Number(process.env.PORT) || 3000,
   /** Cache TTL for CMC responses, in seconds. Saves API credits during development and demos. */
   cacheTtlSeconds: Number(process.env.CMC_CACHE_TTL) || 60,

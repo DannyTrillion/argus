@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
-import { CheckCircle2, XCircle, Activity } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { CheckCircle2, XCircle, Activity, Pause, Play } from "lucide-react";
+import clsx from "clsx";
 import { api } from "../lib/api";
 import { timeAgo } from "../lib/format";
 import { Card, CardTitle } from "../components/ui/Card";
@@ -12,6 +13,32 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
       <div className="mt-1 font-mono text-[15px]">{value}</div>
       {sub && <div className="mt-0.5 text-[11px] text-ink-3">{sub}</div>}
     </div>
+  );
+}
+
+function AutomationCard() {
+  const qc = useQueryClient();
+  const { data } = useQuery({ queryKey: ["automation"], queryFn: api.automation });
+  const toggle = useMutation({ mutationFn: api.setAutomation, onSuccess: (d) => { qc.setQueryData(["automation"], d); void qc.invalidateQueries({ queryKey: ["findings"] }); } });
+  const paused = data?.automationPaused ?? false;
+  return (
+    <Card>
+      <CardTitle right={<span className={clsx("pill px-2 py-0.5 font-mono text-[10.5px]", paused ? "bg-down-dim text-down" : "bg-up-dim text-up")}>{paused ? "paused" : "running"}</span>}>Automation and spend</CardTitle>
+      <div className="grid grid-cols-2 gap-2.5">
+        <Stat label="Analyst model" value={data?.analystModel ?? "—"} sub="questions you ask" />
+        <Stat label="Automation model" value={data?.automationModel ?? "—"} sub="brief, investigations, headlines" />
+      </div>
+      <p className="mt-3 text-[12px] leading-relaxed text-ink-3">
+        Every model call bills your Anthropic key. The brief runs every 4h and the watch loop every 30 min with at most 6 investigations a day. Pause both here when you are not using Argus; the Analyst keeps working on demand.
+      </p>
+      <button
+        onClick={() => toggle.mutate(!paused)}
+        disabled={toggle.isPending || !data}
+        className={clsx("pill mt-3 inline-flex items-center gap-2 px-4 py-2 text-[13px] font-medium disabled:opacity-60", paused ? "bg-gold text-bg hover:bg-gold-2" : "glass-2 text-ink hover:border-gold/40")}
+      >
+        {paused ? <><Play size={14} /> Resume automation</> : <><Pause size={14} /> Pause automation</>}
+      </button>
+    </Card>
   );
 }
 
@@ -35,6 +62,7 @@ export default function Status() {
       ) : (
         <>
           <div className="grid gap-4 lg:grid-cols-3">
+            <AutomationCard />
             <Card>
               <CardTitle>CoinMarketCap plan</CardTitle>
               <div className="grid grid-cols-2 gap-2.5">

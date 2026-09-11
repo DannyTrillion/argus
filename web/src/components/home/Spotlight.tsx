@@ -22,7 +22,8 @@ function NoticedFeed() {
     <div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-[11.5px] text-ink-3">
         <span>
-          Watching 200 coins, sectors, liquidations, dominance and sentiment · every {data?.intervalMinutes ?? 10} min
+          {data?.paused ? <span className="pill mr-1.5 bg-down-dim px-2 py-0.5 text-down">automation paused</span> : null}
+          Watching 200 coins, sectors, liquidations, dominance and sentiment · every {data?.intervalMinutes ?? 30} min
           {data?.lastScanAt ? ` · last scan ${timeAgo(data.lastScanAt)}` : ""} · brief every 4h
         </span>
         <button onClick={() => scanNow.mutate()} disabled={scanNow.isPending || data?.scanning} className="glass-2 pill flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] text-ink-2 hover:text-ink disabled:opacity-60">

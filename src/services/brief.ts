@@ -7,6 +7,8 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import type { BetaMessageParam } from "@anthropic-ai/sdk/resources/beta/messages";
 import { runAgent } from "../agent/agent.js";
+import { config } from "../config.js";
+import { automationPaused } from "./settings.js";
 
 export interface Brief {
   text: string;
@@ -55,6 +57,7 @@ async function generate(): Promise<Brief> {
   const result = await runAgent({
     messages,
     maxIterations: 10,
+    model: config.automationModel,
     onEvent: (e) => {
       if (e.type === "api_call") {
         calls += 1;
@@ -62,7 +65,7 @@ async function generate(): Promise<Brief> {
       }
     },
   });
-  model = process.env.ARGUS_MODEL ?? "claude-opus-5";
+  model = config.automationModel;
   const brief: Brief = { text: result.text, generatedAt: new Date().toISOString(), model, calls, credits, durationMs: Date.now() - started };
   current = brief;
   save(brief);
@@ -96,8 +99,10 @@ export function startBriefSchedule(): void {
     return;
   }
   // Warm on boot unless a fresh cached brief was loaded, then refresh on an interval.
-  if (!current) refreshBrief().catch((err) => console.error("[brief] initial generation failed:", err instanceof Error ? err.message : err));
+  // Both respect the pause switch; a manual refresh from the API still works.
+  if (!current && !automationPaused()) refreshBrief().catch((err) => console.error("[brief] initial generation failed:", err instanceof Error ? err.message : err));
   timer = setInterval(() => {
+    if (automationPaused()) return;
     refreshBrief().catch((err) => console.error("[brief] refresh failed:", err instanceof Error ? err.message : err));
   }, REFRESH_MS);
   timer.unref();

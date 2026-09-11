@@ -75,8 +75,9 @@ export interface CoinDetail { coin: Coin; info: CoinInfo | null; performance: Pe
 export interface CompareResult { days: number; stats: Array<SeriesStats & { source: string }>; normalized: Array<{ date: string; values: Record<string, number | null> }>; correlation: Array<{ a: string; b: string; r: number | null }> }
 export interface MapEntry { id: number; name: string; symbol: string; slug: string; rank?: number }
 export interface Capability { name: string; endpoint: string; ok: boolean; note?: string }
+export interface Automation { automationPaused: boolean; analystModel: string; automationModel: string }
 export interface Status {
-  model: string; keyless: boolean;
+  model: string; automationModel?: string; automationPaused?: boolean; keyless: boolean;
   plan: { credit_limit_monthly?: number; credit_limit_monthly_reset?: string; rate_limit_minute?: number } | null;
   usage: { current_minute?: { requests_made?: number; requests_left?: number }; current_day?: { credits_used?: number; credits_left?: number }; current_month?: { credits_used?: number; credits_left?: number } } | null;
   capabilities: Capability[];
@@ -97,7 +98,7 @@ export interface Finding {
   subject: { type: "coin"; id: number; symbol: string; name: string } | { type: "sector"; name: string } | { type: "market" };
   severity: 1 | 2 | 3; metric: number; observedAt: string; summary: string; question: string; attribution: Explanation | null; calls: number; credits: number; investigatedAt: string;
 }
-export interface Findings { findings: Finding[]; lastScanAt: string | null; nextScanAt: string | null; intervalMinutes: number; investigationsToday: number; dailyCap: number; scanning: boolean }
+export interface Findings { findings: Finding[]; lastScanAt: string | null; nextScanAt: string | null; intervalMinutes: number; investigationsToday: number; dailyCap: number; scanning: boolean; paused?: boolean; model?: string }
 export interface Story {
   id: string; type: "finding" | "brief"; kicker: string; headline: string; deck: string; body: string;
   accent: "gold" | "up" | "down" | "blue";
@@ -142,6 +143,12 @@ export const api = {
   explain: (symbol: string, window: "1h" | "24h" | "7d" = "24h") => get<Explanation>(`/explain?symbol=${encodeURIComponent(symbol)}&window=${window}`),
   findings: () => get<Findings>("/findings"),
   stream: () => get<Stream>("/stream"),
+  automation: () => get<Automation>("/automation"),
+  setAutomation: async (paused: boolean) => {
+    const res = await fetch("/api/automation", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ paused }) });
+    if (!res.ok) throw new ApiError(res.status, res.statusText);
+    return (await res.json()) as Automation;
+  },
   scanNow: async () => {
     const res = await fetch("/api/watch/scan", { method: "POST" });
     if (!res.ok) throw new ApiError(res.status, res.statusText);

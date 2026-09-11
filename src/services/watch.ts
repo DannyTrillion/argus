@@ -11,6 +11,7 @@ import * as market from "./market.js";
 import { explainMove, type Explanation } from "./explain.js";
 import { runAgent } from "../agent/agent.js";
 import { config } from "../config.js";
+import { automationPaused } from "./settings.js";
 
 export type SignalKind = "coin_move" | "volume_spike" | "liquidation_burst" | "dominance_break" | "sector_divergence" | "sentiment_shift";
 
@@ -49,10 +50,10 @@ interface State {
 }
 
 const FILE = process.env.WATCH_STATE_FILE ?? ".cache/watch.json";
-const INTERVAL_MS = Number(process.env.WATCH_INTERVAL_MINUTES ?? 10) * 60_000;
+const INTERVAL_MS = Number(process.env.WATCH_INTERVAL_MINUTES ?? 30) * 60_000;
 const COOLDOWN_MS = Number(process.env.WATCH_COOLDOWN_HOURS ?? 6) * 3_600_000;
 const MAX_PER_SCAN = Number(process.env.WATCH_MAX_PER_SCAN ?? 2);
-const MAX_PER_DAY = Number(process.env.WATCH_MAX_PER_DAY ?? 12);
+const MAX_PER_DAY = Number(process.env.WATCH_MAX_PER_DAY ?? 6);
 const MAX_FINDINGS = 40;
 
 let state: State = load();
@@ -189,7 +190,7 @@ async function investigate(s: Signal): Promise<Finding> {
   const messages: BetaMessageParam[] = [{ role: "user", content: prompt }];
   let raw = "";
   try {
-    const r = await runAgent({ messages, maxIterations: 8, onEvent: (e) => { if (e.type === "api_call") { calls += 1; credits += e.record.creditCount; } } });
+    const r = await runAgent({ messages, maxIterations: 8, model: config.automationModel, onEvent: (e) => { if (e.type === "api_call") { calls += 1; credits += e.record.creditCount; } } });
     raw = r.text.replace(/<followups>[\s\S]*$/i, "").trim();
   } catch (err) {
     raw = `Investigation failed: ${err instanceof Error ? err.message : String(err)}`;
@@ -220,7 +221,7 @@ async function headlineFor(title: string, summary: string): Promise<{ headline: 
     const { default: Anthropic } = await import("@anthropic-ai/sdk");
     const client = new Anthropic();
     const res = await client.messages.create({
-      model: config.model,
+      model: config.automationModel,
       max_tokens: 200,
       messages: [{ role: "user", content: `Write a headline (max 8 words, financial-news style, not just a ticker and a number) and a one-sentence deck (max 22 words, include the key number) for this finding titled "${title}":\n\n${summary}\n\nRespond exactly as two lines:\nHeadline: ...\nDeck: ...` }],
     });
@@ -306,6 +307,8 @@ export function findings() {
     investigationsToday: state.investigationsToday.count,
     dailyCap: MAX_PER_DAY,
     scanning: scanning !== null,
+    paused: automationPaused(),
+    model: config.automationModel,
     watching: { coins: 200, sectors: true, liquidations: true, dominance: true, sentiment: true },
   };
 }
@@ -319,7 +322,7 @@ export function startWatch(): void {
   if (config.keyless) return;
   // Backfill headlines for older findings, then scan shortly after boot, then on the interval.
   void ensureHeadlines().then((n) => { if (n) console.log(`[watch] backfilled ${n} headline(s)`); });
-  setTimeout(() => void scan(), 20_000).unref();
-  timer = setInterval(() => void scan(), INTERVAL_MS);
+  setTimeout(() => { if (!automationPaused()) void scan(); }, 20_000).unref();
+  timer = setInterval(() => { if (!automationPaused()) void scan(); }, INTERVAL_MS);
   timer.unref();
 }

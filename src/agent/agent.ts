@@ -24,6 +24,8 @@ export interface RunOptions {
   onEvent: (event: AgentEvent) => void;
   signal?: AbortSignal;
   maxIterations?: number;
+  /** Override the model, e.g. a cheaper one for scheduled work. */
+  model?: string;
 }
 
 export interface RunResult {
@@ -59,7 +61,7 @@ async function runAgentInner(opts: RunOptions, runId: string): Promise<RunResult
   try {
     const runner = getClient().beta.messages.toolRunner(
       {
-        model: config.model,
+        model: opts.model ?? config.model,
         max_tokens: 16000,
         thinking: { type: "adaptive", display: "summarized" },
         output_config: { effort: "high" },
