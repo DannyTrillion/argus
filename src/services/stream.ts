@@ -97,5 +97,9 @@ export function stream(): { stories: Story[]; lastScanAt: string | null; interva
     attribution: x.attribution,
     meta: { calls: x.calls, credits: x.credits },
   }));
-  return { stories: [...fromFindings, ...briefStories()], lastScanAt: f.lastScanAt, intervalMinutes: f.intervalMinutes, scanning: f.scanning };
+  // Findings lead. The brief lives in its own deck on Home, so only borrow brief cards
+  // to keep the coverflow from looking sparse on a quiet day.
+  const MIN_CARDS = 5;
+  const pad = Math.max(0, MIN_CARDS - fromFindings.length);
+  return { stories: [...fromFindings, ...briefStories().slice(0, pad)], lastScanAt: f.lastScanAt, intervalMinutes: f.intervalMinutes, scanning: f.scanning };
 }
