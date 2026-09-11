@@ -11,7 +11,7 @@ flags moves that are unusual for that coin, investigates them and writes the hea
 every four hours it writes a market brief without anyone typing a prompt.
 
 Built for the [Build with CMC: API Hackathon](https://dorahacks.io/hackathon/coinmarketcap-api-202609/detail),
-track **AI Agents and Automation**.
+track **AI Agents and Automation**. Live: **https://argus-production-d392.up.railway.app**
 
 ## Screens
 
@@ -60,6 +60,7 @@ Production:
 ```bash
 pnpm build && pnpm start     # serves the built app and API on one port
 docker build -t argus . && docker run -p 3100:3100 --env-file .env argus
+railway up                   # deploys with railway.json; mount a volume at /app/.cache
 ```
 
 Without `CMC_API_KEY`, Argus falls back to CMC's keyless public API for the endpoints it

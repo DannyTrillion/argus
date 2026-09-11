@@ -8,7 +8,7 @@ Deadline: **30 Sep 2026, 23:59 UTC**. Track: **AI Agents and Automation**.
 - [ ] Register on DoraHacks with the same email as the CoinMarketCap API account
 - [ ] Rotate the CoinMarketCap and Anthropic keys, then confirm `git log -p | grep -c sk-ant` is 0
 - [ ] Push the public repo `DannyTrillion/argus` (MIT, README, `.env.example`, no `.env`)
-- [ ] Deploy (Railway or Render, Dockerfile in repo) and put the live URL in the BUIDL
+- [x] Deployed on Railway: https://argus-production-d392.up.railway.app (project `argus`, service `argus`, volume at `/app/.cache`)
 - [ ] On the deployed app open `/status`, resume automation, run "Scan now" so the coverflow has fresh findings
 - [ ] Record the 2-minute video in your own voice (script below), upload unlisted to YouTube
 - [ ] Post on X with `#BuildwithCMC`, linking the BUIDL page (draft below), paste the post URL into the BUIDL
@@ -137,7 +137,7 @@ Repo and live link are in the submission."
 ## X post draft
 
 Post from your account, tag @CoinMarketCap, attach a 20–30s screen clip of the coverflow
-and the analyst evidence panel. Replace `<buidl-url>` and `<live-url>`.
+and the analyst evidence panel. Replace `<buidl-url>`.
 
 > Built Argus for #BuildwithCMC: a market terminal with an AI analyst that watches
 > @CoinMarketCap for you.
@@ -148,7 +148,7 @@ and the analyst evidence panel. Replace `<buidl-url>` and `<live-url>`.
 >
 > 20 CMC endpoints, 18 agent tools, one owl.
 >
-> Live: <live-url>
+> Live: https://argus-production-d392.up.railway.app
 > BUIDL: <buidl-url>
 
 Alternate shorter version if the clip carries it:
