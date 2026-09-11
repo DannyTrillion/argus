@@ -9,6 +9,7 @@ import * as cmc from "../cmc/endpoints.js";
 import { CmcApiError } from "../cmc/http.js";
 import { correlationByDate, summarizeCandles } from "./analytics.js";
 import { explainMove } from "../services/explain.js";
+import { analyzePortfolio, type Holding } from "../services/portfolio.js";
 
 export interface ToolEvent {
   name: string;
@@ -21,7 +22,7 @@ export interface ToolEvent {
 }
 
 /** Tools whose results are small and chartable; the UI renders them under the answer. */
-const CHARTABLE = new Set(["analyze_series", "get_global_metrics_history", "get_fear_greed", "get_liquidations", "get_ohlcv", "explain_move"]);
+const CHARTABLE = new Set(["analyze_series", "get_global_metrics_history", "get_fear_greed", "get_liquidations", "get_ohlcv", "explain_move", "analyze_portfolio"]);
 
 type Emit = (event: ToolEvent) => void;
 
@@ -58,7 +59,12 @@ const symbolList = z
   .max(30)
   .describe("Ticker symbols, e.g. [\"BTC\", \"ETH\"]. Case-insensitive.");
 
-export function createTools(emit: Emit) {
+export interface ToolContext {
+  /** Holdings the asker's browser sent with this question. Absent for scheduled work. */
+  portfolio?: Holding[];
+}
+
+export function createTools(emit: Emit, ctx: ToolContext = {}) {
   const searchCoins = betaZodTool({
     name: "search_coins",
     description:
@@ -322,8 +328,23 @@ export function createTools(emit: Emit) {
     run: instrument("explain_move", emit, (input: { symbol: string; window: "1h" | "24h" | "7d" }) => explainMove(input.symbol.toUpperCase(), input.window)),
   });
 
+  const analyzePortfolioTool = betaZodTool({
+    name: "analyze_portfolio",
+    description:
+      "The person's own holdings, priced and decomposed. Returns total value, every position with weight and contribution to today's move, the same market-beta / sector / coin-specific attribution as explain_move but for the whole basket, how it did versus simply holding Bitcoin, concentration (Herfindahl and effective number of positions), sector exposure, and 90-day risk. Use this for any question about \"my portfolio\", \"my holdings\", \"my bags\", \"should I rebalance\", or \"why am I down\". Holdings come from the person's browser; if none are set, say so and point them to the Portfolio tab on the Watchlist screen. There is no cost basis, so never call these numbers profit.",
+    inputSchema: z.object({}),
+    run: instrument("analyze_portfolio", emit, async () => {
+      const holdings = ctx.portfolio ?? [];
+      if (holdings.length === 0) {
+        return { holdings: 0, message: "This person has not set any holdings. Ask them to add amounts on the Portfolio tab of the Watchlist screen." };
+      }
+      return analyzePortfolio(holdings);
+    }),
+  });
+
   return [
     explainMoveTool,
+    analyzePortfolioTool,
     getGlobalMetrics,
     getFearGreed,
     getAltcoinSeason,

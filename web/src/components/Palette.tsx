@@ -17,6 +17,7 @@ const PAGES: Item[] = [
   { id: "p-home", kind: "page", label: "Home", to: "/", icon: <LayoutGrid size={14} /> },
   { id: "p-explore", kind: "page", label: "Explore", to: "/explore", icon: <Compass size={14} /> },
   { id: "p-watch", kind: "page", label: "Watchlist", to: "/watchlist", icon: <Star size={14} /> },
+  { id: "p-portfolio", kind: "page", label: "Portfolio", hint: "your holdings, priced and explained", to: "/watchlist?view=portfolio", icon: <Star size={14} /> },
   { id: "p-analyst", kind: "page", label: "Analyst", to: "/analyst", icon: <MessageSquareText size={14} /> },
   { id: "p-status", kind: "page", label: "Status", to: "/status", icon: <LayoutGrid size={14} /> },
   { id: "p-keys", kind: "page", label: "Keys", hint: "bring your own Anthropic key", to: "/keys", icon: <LayoutGrid size={14} /> },

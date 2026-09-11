@@ -55,6 +55,14 @@ Notes gathered while building Argus. Kept as a running log; the submission form 
     a locally sorted listings screen), but a `required_plan` field in the error would let
     clients explain the gap to the user instead of guessing.
 
+11. **No holdings or portfolio endpoint, and no obvious substitute.** The closest thing is
+    `/v2/cryptocurrency/info?address=<contract>`, which does resolve a token contract to a CMC
+    asset (verified: the Ethereum USDC contract returns id 3408 for 1 credit). That makes CMC a
+    good pricing and analysis layer for a portfolio, but the holdings themselves have to come
+    from somewhere else. A read-only "value these ids and amounts" endpoint, or even just
+    documenting the `address` lookup on the info page as the contract-mapping route, would save
+    every portfolio-shaped integration from guessing.
+
 ## What it made possible
 
 - Every question in the demo is answered from live data with a visible per-call credit cost.
@@ -66,13 +74,15 @@ Notes gathered while building Argus. Kept as a running log; the submission form 
   detector on the top 100 without the OHLCV endpoint, at one credit per 100 points.
 - The credit cost on every response (`status.credit_count`) let Argus show the exact price
   of each answer, which turned out to be a feature judges and users both notice.
+- Batching ids into `/v3/cryptocurrency/quotes/historical` prices a whole portfolio's 90-day
+  history in one call, which is what makes the Portfolio screen cheap enough to refresh live.
 
 ## Paragraph for the submission form
 
 CoinMarketCap gave Argus everything it needed to be an analyst rather than a price ticker:
 categories for sector rotation, price-performance-stats for ATH context, liquidations for
 leverage, and hourly quotes/historical for anomaly detection, each with a visible credit cost.
-Where it got in the way: v3 endpoints return `error_code` as a string while v1/v2 return a
+Where it got in the way: there is no holdings endpoint, so portfolio features need a second data source; v3 endpoints return `error_code` as a string while v1/v2 return a
 number; sort plus `market_cap_min` on listings returns an empty list; symbol lookups return
 every asset sharing a ticker with no "best match"; tags are display names on quotes but slugs
 on listings; Fear & Greed history uses epoch-second strings; and plan-locked endpoints return

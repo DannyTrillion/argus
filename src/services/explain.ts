@@ -46,6 +46,15 @@ const TAG_TO_SECTOR: Array<[RegExp, string]> = [
   [/prediction-market/, "Prediction markets"],
 ];
 
+/** First curated sector label matching a coin's CMC tag slugs, or null. */
+export function sectorForTags(tags: string[] | undefined): string | null {
+  for (const tag of tags ?? []) {
+    const hit = TAG_TO_SECTOR.find(([re]) => re.test(tag));
+    if (hit) return hit[1];
+  }
+  return null;
+}
+
 export interface Explanation {
   symbol: string;
   name: string;

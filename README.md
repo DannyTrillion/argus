@@ -4,7 +4,7 @@
 
 Argus is a full web app: a market dashboard, a coin explorer, coin pages with computed risk
 profiles, a watchlist with correlation analysis, and an analyst you can ask questions in
-plain language. The analyst is a Claude agent with 18 tools over the CoinMarketCap API. It
+plain language. The analyst is a Claude agent with 19 tools over the CoinMarketCap API. It
 decides which endpoints answer a question, calls them, computes what the API does not
 provide, and shows every call it made. On its own, Argus scans the top 100 every half hour,
 flags moves that are unusual for that coin, investigates them and writes the headline; and
@@ -21,6 +21,7 @@ track **AI Agents and Automation**. Live: **https://argus-production-d392.up.rai
 | **Explore** | Top 200 coins with price, 24h and 7d change, market cap, volume, 7-day sparklines, sortable columns, and filters for cap size, DeFi, Layer 1, AI, memes and stablecoins. |
 | **Coin** | Price and volume chart with 24h to 1y ranges (candles where the plan allows), key stats, ATH distance, a 90-day risk profile (return, volatility, drawdown, correlation with BTC), project info, and an inline analyst with prefilled questions. |
 | **Watchlist** | Saved coins, a rebased relative-performance chart and a correlation heatmap for any selection. |
+| **Portfolio** | A tab on the Watchlist screen. Put an amount next to any coin and Argus prices the basket, splits today's move into market beta, sector and what is specific to your positions, charts the basket against Bitcoin, and measures concentration, sector exposure and 90-day risk. Amounts live in the browser. |
 | **Analyst** | The full agent: streaming answers, inline charts for risk, history, attribution and liquidations, model-proposed follow-up questions, a fixed rail with tool steps and every CoinMarketCap call with its credit cost and response, conversation history saved on device, and read-only share links (`/s/:id`). |
 | **Status** | Plan tier and credit usage, a live probe of which endpoint families the key can reach, brief and watch-loop state, a pause switch for the automation, and the recent call log. |
 
@@ -34,6 +35,7 @@ Also: a first-run welcome tour with the Argus owl, a Cmd+K command palette (coin
 | "Compare BTC, ETH and SOL risk" | Fetches daily history for each and computes return, max drawdown, annualized volatility, best and worst day, volume trend, and correlation with BTC. |
 | "Which sectors are rotating?" | Reads all categories, ranks by market cap and volume change, then drills into the constituents of the movers. |
 | "Is it altseason?" | Combines the Altcoin Season Index, BTC dominance and its 24h change, and Fear & Greed into one read. |
+| "Why is my portfolio down?" | Prices the person's holdings, applies the same attribution to the whole basket, names the positions that drove it, and compares with simply holding Bitcoin ([src/services/portfolio.ts](src/services/portfolio.ts)). CoinMarketCap has no holdings endpoint; the amounts come from the browser and the analysis is all derived. |
 | Automated brief | Every four hours the agent writes a structured brief: backdrop, movers, sector rotation, leverage and risk, watch list. Shown on the home screen as a sliding card deck. |
 | Watch loop | Every 30 minutes a pure detector scores the top 100 against each coin's own hourly volatility ([src/services/watch.ts](src/services/watch.ts)). Flags get an agent investigation with a headline, deck and article, subject to cooldowns and a daily cap. |
 | Move attribution | `explain_move` computes the coin's beta to BTC over 30 days, splits the move into market, sector-excess and coin-specific parts, and adds the liquidation picture ([src/services/explain.ts](src/services/explain.ts)). Deterministic, so the same question gives the same numbers. |
@@ -129,13 +131,14 @@ src/services/market.ts  read models: overview, history, movers, sectors, coins, 
 src/services/brief.ts   scheduled brief (generate on boot, refresh every 4h, persisted)
 src/services/watch.ts   watch loop: anomaly detector, investigations, cooldowns, atomic state
 src/services/explain.ts move attribution: beta to BTC, sector excess, coin-specific, leverage
+src/services/portfolio.ts holdings priced and decomposed: weights, attribution, concentration, risk
 src/services/stream.ts  "Argus noticed" feed: findings first, padded with brief stories
 src/services/settings.ts pause switch for the automation
 src/services/share.ts   read-only shared conversations
 src/services/status.ts  plan usage, endpoint probes, automation state
 src/services/keys.ts    bring-your-own Anthropic key: resolve per request, one-token test
 src/agent/agent.ts      Claude tool-runner loop, streams text and tool events
-src/agent/tools.ts      18 tools wrapping CMC endpoints + derived analytics
+src/agent/tools.ts      19 tools wrapping CMC endpoints + derived analytics
 src/agent/analytics.ts  returns, drawdown, volatility, correlation (pure, unit tested)
 src/agent/prompt.ts     frozen system prompt (prompt-cached)
 src/cmc/http.ts         fetch, cache, credit accounting, call log

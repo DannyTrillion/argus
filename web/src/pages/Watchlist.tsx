@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Star, X } from "lucide-react";
+import { Star, X, Wallet, ListChecks } from "lucide-react";
 import clsx from "clsx";
 import { api } from "../lib/api";
 import { usd, pct } from "../lib/format";
 import { useWatchlist } from "../lib/watchlist";
+import { useHoldings } from "../lib/holdings";
+import { PortfolioView } from "../components/portfolio/PortfolioView";
 import { useEChart, palette, tooltipStyle, axisStyle } from "../lib/chart";
 import { Change } from "../components/ui/Change";
 import { Sparkline } from "../components/ui/Sparkline";
@@ -84,6 +86,9 @@ function CompareChart({ symbols, days }: { symbols: string[]; days: number }) {
 
 export default function Watchlist() {
   const wl = useWatchlist();
+  const holdings = useHoldings();
+  const [params, setParams] = useSearchParams();
+  const view = params.get("view") === "portfolio" ? "portfolio" : "watchlist";
   const { data, isLoading } = useQuery({ queryKey: ["coins", 200], queryFn: () => api.coins(200), refetchInterval: 60_000 });
   const [selected, setSelected] = useState<number[]>([]);
   const [days, setDays] = useState(90);
@@ -101,15 +106,38 @@ export default function Watchlist() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="text-[13px] text-ink-2">{rows.length} coins · saved on this device</div>
-          <h1 className="font-display mt-1 text-[34px] font-light leading-tight tracking-tight">Watchlist</h1>
+          <div className="text-[13px] text-ink-2">
+            {view === "portfolio" ? `${holdings.count} held · never leaves this device` : `${rows.length} coins · saved on this device`}
+          </div>
+          <h1 className="font-display mt-1 text-[34px] font-light leading-tight tracking-tight">{view === "portfolio" ? "Portfolio" : "Watchlist"}</h1>
         </div>
-        <div className="glass-2 pill flex p-0.5">
-          {[30, 90, 365].map((d) => (
-            <button key={d} onClick={() => setDays(d)} className={clsx("pill px-3 py-1 font-mono text-[11px]", days === d ? "bg-ink text-bg" : "text-ink-2")}>{d === 365 ? "1Y" : `${d}D`}</button>
-          ))}
+        <div className="flex items-center gap-2">
+          <div className="glass-2 pill flex p-0.5">
+            {([["watchlist", "Watchlist", ListChecks], ["portfolio", "Portfolio", Wallet]] as const).map(([key, label, Icon]) => (
+              <button
+                key={key}
+                onClick={() => setParams(key === "portfolio" ? { view: "portfolio" } : {}, { replace: true })}
+                className={clsx("pill flex items-center gap-1.5 px-3 py-1.5 text-[12px]", view === key ? "bg-ink text-bg" : "text-ink-2 hover:text-ink")}
+              >
+                <Icon size={13} /> {label}
+                {key === "portfolio" && holdings.count > 0 && view !== "portfolio" && <span className="ml-0.5 font-mono text-[10px] text-gold">{holdings.count}</span>}
+              </button>
+            ))}
+          </div>
+          {view === "watchlist" && (
+            <div className="glass-2 pill flex p-0.5">
+              {[30, 90, 365].map((d) => (
+                <button key={d} onClick={() => setDays(d)} className={clsx("pill px-3 py-1 font-mono text-[11px]", days === d ? "bg-ink text-bg" : "text-ink-2")}>{d === 365 ? "1Y" : `${d}D`}</button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
+
+      {view === "portfolio" ? (
+        isLoading ? <Skeleton className="h-[420px]" /> : <PortfolioView coins={data?.coins ?? []} watchIds={wl.ids} />
+      ) : (
+      <>
 
       <Card className="p-0">
         {isLoading ? (
@@ -159,6 +187,8 @@ export default function Watchlist() {
           </div>
           <CompareChart symbols={compareSymbols} days={days} />
         </>
+      )}
+      </>
       )}
     </div>
   );

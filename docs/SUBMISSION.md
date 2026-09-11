@@ -38,7 +38,15 @@ move beyond BTC) and a coin-specific residual, then adds the leverage picture fr
 liquidations endpoints. The result is a deterministic attribution bar plus a plain-English
 read, on the home screen and inside every analyst answer.
 
-**3. The analyst shows its work.** Every answer streams with the tool steps, inline charts
+**3. It answers questions about what you actually hold.** Put amounts next to coins on the
+Portfolio tab and the same engine runs on your basket: total value, the positions that drove
+today's move, the split between market beta, sector and what is specific to your positions,
+how you did against simply holding Bitcoin, concentration (Herfindahl and effective number of
+positions), sector exposure and 90-day risk. CoinMarketCap has no holdings endpoint, so the
+amounts come from the browser, stay there, and the analysis is entirely derived. There is no
+wallet connection and no signature, so a judge can try it in ten seconds.
+
+**4. The analyst shows its work.** Every answer streams with the tool steps, inline charts
 (risk bars, global cap line, Fear & Greed, liquidations, price history) and an evidence panel
 listing each CoinMarketCap call with endpoint, parameters, credit cost and a response
 preview. The model proposes follow-up questions after each answer. Conversations can be
@@ -48,6 +56,9 @@ Also: a scheduled market brief every four hours (backdrop, movers, rotation, lev
 list) shown as a card deck, a welcome tour with the Argus owl, Cmd+K palette, local price and
 Fear & Greed alerts, a `/status` page with plan usage, endpoint probes and a pause switch for
 the automation, plan-aware fallbacks for the Basic tier, and a keyless mode for the public API.
+
+The analyst has a tool for the portfolio too, so "why is my portfolio down today" is answered
+with the same numbers shown on the screen.
 
 **Stack:** TypeScript, Hono, Anthropic SDK tool runner (claude-opus-5 for questions,
 claude-sonnet-5 for unattended work), React 19, Vite, Tailwind v4, ECharts, motion. 15 unit
@@ -120,12 +131,16 @@ which splits the move into market beta, sector excess and what's left that's coi
 using quotes-latest, quotes-historical, categories and the liquidations endpoints. Every call
 is listed here with its credit cost. These are the follow-ups it suggests."
 
-**1:10–1:30 Brief and explainer.** Back home. Show the brief deck sliding, then the Move
+**1:10–1:25 Portfolio.** Watchlist screen, Portfolio tab, type an amount or two.
+"Put in what you hold and the same engine runs on your basket: what moved your value, how much
+of it was just Bitcoin, and how concentrated you are. It never leaves the browser."
+
+**1:25–1:40 Brief and explainer.** Back home. Show the brief deck sliding, then the Move
 explainer tab with a chip or two.
 "Every four hours it writes a brief without anyone typing a prompt. And the move explainer
 does the attribution for any coin in one tap."
 
-**1:30–1:50 Depth.** Coin page risk profile, watchlist correlation heatmap, quick pass over
+**1:40–1:50 Depth.** Coin page risk profile, watchlist correlation heatmap, quick pass over
 Explore.
 "Underneath is a full terminal: risk profiles computed from ninety days of history, a
 correlation heatmap for your watchlist, and a screener over two hundred coins."
@@ -146,7 +161,7 @@ and the analyst evidence panel. Replace `<buidl-url>`.
 > headline. Ask "why is SOL moving" and it splits the move into market beta, sector and
 > coin-specific, showing every API call and its credit cost.
 >
-> 20 CMC endpoints, 18 agent tools, one owl.
+> 20 CMC endpoints, 19 agent tools, one owl.
 >
 > Live: https://argus-production-d392.up.railway.app
 > BUIDL: <buidl-url>

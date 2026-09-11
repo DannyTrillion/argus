@@ -38,6 +38,8 @@ app.post("/api/chat", async (c) => {
     message?: string;
     /** Optional transcript from the client, used to rebuild context if this server no longer has the session. */
     history?: Array<{ role: "user" | "assistant"; text: string }>;
+    /** Optional holdings from the asker's browser, for portfolio questions. Never stored. */
+    portfolio?: Array<{ id: number; amount: number }>;
   };
   const sessionId = (body.sessionId ?? "").trim() || crypto.randomUUID();
   const message = (body.message ?? "").trim();
@@ -71,6 +73,7 @@ app.post("/api/chat", async (c) => {
       const result = await runAgent({
         messages,
         apiKey,
+        portfolio: Array.isArray(body.portfolio) ? body.portfolio.slice(0, 100) : undefined,
         onEvent: (e) => {
           if (e.type === "error") errored = true;
           void send(e.type, e);

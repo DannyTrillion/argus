@@ -13,6 +13,7 @@ import { stream } from "../services/stream.js";
 import { getSettings, setAutomationPaused } from "../services/settings.js";
 import { createShare, readShare } from "../services/share.js";
 import { KEY_HEADER, canRunModel, keyStatus, resolveAnthropicKey, testAnthropicKey } from "../services/keys.js";
+import { analyzePortfolio, type Holding } from "../services/portfolio.js";
 
 export const api = new Hono();
 
@@ -82,6 +83,15 @@ api.post("/watch/scan", async (c) => {
   if (!canRunModel(header)) return c.json({ error: "no_key", message: "No Anthropic key. Add yours on the Keys page to run investigations." }, 401);
   const fresh = await scan(resolveAnthropicKey(header));
   return c.json({ fresh, ...findings() });
+});
+
+// Portfolio analysis. Holdings arrive with the request, are priced and decomposed, and are
+// discarded; nothing about a visitor's positions is stored on the server.
+api.post("/portfolio", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as { holdings?: Holding[] };
+  const holdings = Array.isArray(body.holdings) ? body.holdings : [];
+  if (holdings.length > 100) return c.json({ error: "too many holdings" }, 400);
+  return c.json(await analyzePortfolio(holdings));
 });
 
 // Bring your own key: what this deployment has, and a one-token test of a caller's key.

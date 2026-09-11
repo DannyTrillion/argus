@@ -521,6 +521,55 @@ export async function sparklines(ids: number[], count = 8): Promise<Map<number, 
   return out;
 }
 
+export interface ClosePoint {
+  date: string;
+  close: number;
+}
+
+/**
+ * Daily closes with their dates for many coins in as few calls as possible (batches of 100 ids).
+ * Same endpoint and cost as `sparklines`, but keeps the timestamp so series from different
+ * coins can be aligned by date rather than by position. 1 credit per 100 points.
+ */
+export async function closeSeries(ids: number[], count = 90): Promise<Map<number, ClosePoint[]>> {
+  interface RawPoint {
+    timestamp?: string;
+    quote: Record<string, { price: number; timestamp?: string }>;
+  }
+  interface RawAsset {
+    id: number;
+    quotes: RawPoint[];
+  }
+  const out = new Map<number, ClosePoint[]>();
+  const unique = [...new Set(ids)];
+  for (let i = 0; i < unique.length; i += 100) {
+    const batch = unique.slice(i, i + 100);
+    const res = await cmcGet<Record<string, RawAsset | RawAsset[]>>("/v3/cryptocurrency/quotes/historical", {
+      id: batch,
+      count,
+      interval: "daily",
+      convert: CONVERT,
+      skip_invalid: true,
+    });
+    for (const v of Object.values(res.data)) {
+      const assets = Array.isArray(v) ? v : [v];
+      for (const a of assets) {
+        if (!a || !Array.isArray(a.quotes)) continue;
+        const points: ClosePoint[] = [];
+        for (const q of a.quotes) {
+          const entry = q.quote[CONVERT] ?? Object.values(q.quote)[0];
+          const price = num(entry?.price);
+          const stamp = q.timestamp ?? entry?.timestamp;
+          if (price === null || price === undefined || !stamp) continue;
+          points.push({ date: String(stamp).slice(0, 10), close: price });
+        }
+        if (points.length) out.set(a.id, points);
+      }
+    }
+  }
+  return out;
+}
+
 export async function ohlcv(opts: {
   id?: number;
   symbol?: string;

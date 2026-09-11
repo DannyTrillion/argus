@@ -13,6 +13,14 @@ interface GlobalPoint { timestamp: string; btc_dominance: number; total_market_c
 interface FearGreed { latest: { value: number; value_classification: string }; history?: Array<{ value: number; timestamp?: string }> }
 interface Liq { total: { long_liquidations_1h: number; short_liquidations_1h: number; long_liquidations_4h: number; short_liquidations_4h: number; long_liquidations_24h: number; short_liquidations_24h: number } }
 interface Ohlcv { symbol: string; candles: Array<{ time_close: string; close: number; volume: number }>; source?: string }
+interface PortfolioResult {
+  total_value_usd: number;
+  positions: Array<{ id: number; symbol: string; weight_pct: number; contribution_24h_pp: number | null }>;
+  change_24h_pct: number | null;
+  vs_btc_pct: number | null;
+  attribution: { total_pct: number; btc_change_pct: number; beta_to_btc: number | null; market_component_pct: number | null; sector_excess_pct: number | null; coin_specific_pct: number | null; read: string } | null;
+  concentration: { top1_pct: number; effective_positions: number };
+}
 interface Explain { symbol: string; window: string; coin_change_pct: number; btc_change_pct: number; beta_to_btc: number | null; market_component_pct: number | null; sector: { name: string; excess_pct: number } | null; coin_specific_pct: number | null; read: string }
 
 function Frame({ title, children }: { title: string; children: ReactNode }) {
@@ -147,6 +155,52 @@ function Attribution({ e }: { e: Explain }) {
   );
 }
 
+/** The asker's own portfolio: attribution bars plus the positions that drove today's move. */
+function PortfolioCard({ p }: { p: PortfolioResult }) {
+  const a = p.attribution;
+  const parts = [
+    { label: "Market beta", value: a?.market_component_pct ?? 0, color: "#8fb7ff" },
+    { label: "Sector", value: a?.sector_excess_pct ?? 0, color: "#c99cff" },
+    { label: "What you hold", value: a?.coin_specific_pct ?? 0, color: palette.gold },
+  ];
+  const scale = Math.max(0.5, ...parts.map((x) => Math.abs(x.value)), Math.abs(a?.total_pct ?? 0));
+  const movers = [...p.positions]
+    .filter((x) => x.contribution_24h_pp !== null)
+    .sort((x, y) => Math.abs(y.contribution_24h_pp ?? 0) - Math.abs(x.contribution_24h_pp ?? 0))
+    .slice(0, 3);
+  return (
+    <Frame title={`Your portfolio ${usd(p.total_value_usd, { compact: true })} · ${pct(p.change_24h_pct, 2)} 24h${a ? ` · ${a.read}` : ""}`}>
+      <div className="space-y-2.5 py-1">
+        {a &&
+          parts.map((x) => (
+            <div key={x.label}>
+              <div className="mb-1 flex items-center justify-between text-[11.5px]">
+                <span className="text-ink-2">{x.label}</span>
+                <span className="font-mono" style={{ color: x.color }}>{pct(x.value, 2)}</span>
+              </div>
+              <div className="relative h-2 w-full rounded-full bg-surface-2">
+                <div className="absolute inset-y-0 left-1/2 w-px bg-line-2" />
+                <div className="absolute inset-y-0 rounded-full" style={{ background: x.color, width: `${(Math.abs(x.value) / scale) * 50}%`, left: x.value >= 0 ? "50%" : undefined, right: x.value < 0 ? "50%" : undefined }} />
+              </div>
+            </div>
+          ))}
+        {movers.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 pt-0.5">
+            {movers.map((m) => (
+              <span key={m.id} className="glass-2 pill px-2 py-0.5 font-mono text-[10.5px] text-ink-2">
+                {m.symbol} {pct(m.contribution_24h_pp, 2)}
+              </span>
+            ))}
+          </div>
+        )}
+        <div className="font-mono text-[10.5px] text-ink-3">
+          vs BTC {pct(p.vs_btc_pct, 2)} · largest {p.concentration.top1_pct}% · effective {p.concentration.effective_positions}
+        </div>
+      </div>
+    </Frame>
+  );
+}
+
 export function AnswerCharts({ steps }: { steps: Step[] }) {
   const items: ReactNode[] = [];
   steps.forEach((s, i) => {
@@ -158,6 +212,7 @@ export function AnswerCharts({ steps }: { steps: Step[] }) {
     else if (s.name === "get_liquidations" && d && typeof d === "object" && "total" in d) items.push(<LiqBars key={i} liq={d as Liq} />);
     else if (s.name === "get_ohlcv" && d && typeof d === "object" && "candles" in d && (d as Ohlcv).candles.length > 2) items.push(<PriceLine key={i} s={d as Ohlcv} />);
     else if (s.name === "explain_move" && d && typeof d === "object" && "coin_change_pct" in d) items.push(<Attribution key={i} e={d as Explain} />);
+    else if (s.name === "analyze_portfolio" && d && typeof d === "object" && "concentration" in d && "positions" in d) items.push(<PortfolioCard key={i} p={d as PortfolioResult} />);
   });
   if (items.length === 0) return null;
   return <div className="mt-4 grid gap-3 md:grid-cols-2">{items}</div>;

@@ -77,6 +77,31 @@ export interface MapEntry { id: number; name: string; symbol: string; slug: stri
 export interface Capability { name: string; endpoint: string; ok: boolean; note?: string }
 export interface Automation { automationPaused: boolean; analystModel: string; automationModel: string }
 export interface KeyStatus { serverKey: boolean; cmcKey: boolean; analystModel: string; automationModel: string }
+export interface PortfolioPosition {
+  id: number; symbol: string; name: string; rank: number | null; amount: number; price: number;
+  value_usd: number; weight_pct: number; change_24h_pct: number | null; change_7d_pct: number | null;
+  pnl_24h_usd: number | null; contribution_24h_pp: number | null; beta_to_btc: number | null; sector: string | null;
+}
+export interface Portfolio {
+  total_value_usd: number;
+  positions: PortfolioPosition[];
+  change_24h_pct: number | null; change_24h_usd: number | null;
+  change_7d_pct: number | null; change_7d_usd: number | null;
+  attribution: {
+    total_pct: number; btc_change_pct: number; beta_to_btc: number | null;
+    market_component_pct: number | null; sector_excess_pct: number | null; coin_specific_pct: number | null;
+    read: string; read_text: string;
+  } | null;
+  vs_btc_pct: number | null; vs_market_pct: number | null;
+  concentration: { top1_pct: number; top3_pct: number; hhi: number; effective_positions: number; stablecoin_pct: number };
+  sectors: Array<{ name: string; value_usd: number; weight_pct: number; change_24h_pct: number | null }>;
+  contributors: { up: PortfolioPosition[]; down: PortfolioPosition[] };
+  risk: { days: number; annualized_volatility_pct: number; max_drawdown_pct: number; best_day_pct: number; worst_day_pct: number; correlation_to_btc: number | null; return_pct: number } | null;
+  history: Array<{ date: string; value: number }>;
+  btc_history: Array<{ date: string; value: number }>;
+  computed_at: string;
+  caveats: string[];
+}
 export type KeyTest = { ok: true; model: string } | { ok: false; error: string }
 export interface Status {
   model: string; automationModel?: string; automationPaused?: boolean; keyless: boolean;
@@ -165,6 +190,11 @@ export const api = {
     return (await res.json()) as Findings;
   },
   keys: () => get<KeyStatus>("/keys"),
+  portfolio: async (holdings: Array<{ id: number; amount: number }>) => {
+    const res = await fetch("/api/portfolio", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ holdings }) });
+    if (!res.ok) throw new ApiError(res.status, ((await res.json().catch(() => ({}))) as { error?: string }).error ?? res.statusText);
+    return (await res.json()) as Portfolio;
+  },
   testKey: async (key: string) => {
     const res = await fetch("/api/keys/test", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ key }) });
     return (await res.json()) as KeyTest;

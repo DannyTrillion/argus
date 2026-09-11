@@ -28,6 +28,8 @@ export interface RunOptions {
   model?: string;
   /** Caller-supplied Anthropic key for this run only. Omit to use the server's ANTHROPIC_API_KEY. */
   apiKey?: string | null;
+  /** The asker's holdings, sent by their browser with the question. Never stored. */
+  portfolio?: Array<{ id: number; amount: number }>;
 }
 
 export interface RunResult {
@@ -55,7 +57,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
 
 async function runAgentInner(opts: RunOptions, runId: string): Promise<RunResult> {
   const { onEvent } = opts;
-  const tools = createTools((e: ToolEvent) => onEvent({ type: "tool_result", ...e }));
+  const tools = createTools((e: ToolEvent) => onEvent({ type: "tool_result", ...e }), { portfolio: opts.portfolio });
   // Only surface calls made by this run; other requests to the server keep their own tags.
   const unsubscribe = onCall((record) => {
     if (record.runId === runId) onEvent({ type: "api_call", record });
