@@ -26,6 +26,8 @@ export interface RunOptions {
   maxIterations?: number;
   /** Override the model, e.g. a cheaper one for scheduled work. */
   model?: string;
+  /** Caller-supplied Anthropic key for this run only. Omit to use the server's ANTHROPIC_API_KEY. */
+  apiKey?: string | null;
 }
 
 export interface RunResult {
@@ -35,7 +37,8 @@ export interface RunResult {
 }
 
 let client: Anthropic | undefined;
-function getClient(): Anthropic {
+function getClient(apiKey?: string | null): Anthropic {
+  if (apiKey) return new Anthropic({ apiKey });
   if (!client) client = new Anthropic();
   return client;
 }
@@ -59,7 +62,7 @@ async function runAgentInner(opts: RunOptions, runId: string): Promise<RunResult
   });
 
   try {
-    const runner = getClient().beta.messages.toolRunner(
+    const runner = getClient(opts.apiKey).beta.messages.toolRunner(
       {
         model: opts.model ?? config.model,
         max_tokens: 16000,
@@ -130,7 +133,7 @@ export function splitFollowups(raw: string): { text: string; followups: string[]
 }
 
 export function describeError(err: unknown): string {
-  if (err instanceof Anthropic.AuthenticationError) return "Anthropic API key is missing or invalid (set ANTHROPIC_API_KEY).";
+  if (err instanceof Anthropic.AuthenticationError) return "Anthropic API key is missing or invalid. Add yours on the Keys page, or set ANTHROPIC_API_KEY on the server.";
   if (err instanceof Anthropic.APIConnectionError) return "Could not reach the Anthropic API. Check the connection and try again.";
   if (err instanceof Anthropic.RateLimitError) return "Anthropic rate limit hit. Try again in a moment.";
   if (err instanceof Anthropic.APIError) return `Anthropic API error ${err.status}: ${err.message}`;

@@ -3,6 +3,7 @@
  *
  *   GET  /              chat UI
  *   POST /api/chat      { sessionId, message } -> Server-Sent Events of AgentEvent
+ *                       optional header x-anthropic-key: caller-supplied key for this request only
  *   GET  /api/calls     recent CoinMarketCap calls (evidence of live data)
  *   GET  /api/health    liveness + config summary
  */
@@ -19,6 +20,7 @@ import { runAgent, describeError } from "./agent/agent.js";
 import { api } from "./api/routes.js";
 import { startBriefSchedule } from "./services/brief.js";
 import { startWatch } from "./services/watch.js";
+import { KEY_HEADER, canRunModel, resolveAnthropicKey } from "./services/keys.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const webDist = join(here, "..", "web", "dist");
@@ -40,6 +42,9 @@ app.post("/api/chat", async (c) => {
   const sessionId = (body.sessionId ?? "").trim() || crypto.randomUUID();
   const message = (body.message ?? "").trim();
   if (!message) return c.json({ error: "message is required" }, 400);
+  const keyHeader = c.req.header(KEY_HEADER);
+  if (!canRunModel(keyHeader)) return c.json({ error: "no_key", message: "No Anthropic key. Add yours on the Keys page to ask the analyst." }, 401);
+  const apiKey = resolveAnthropicKey(keyHeader);
 
   let history = sessions.get(sessionId);
   if (!history && Array.isArray(body.history) && body.history.length) {
@@ -61,16 +66,20 @@ app.post("/api/chat", async (c) => {
       return chain;
     };
     await send("session", { sessionId });
+    let errored = false;
     try {
       const result = await runAgent({
         messages,
+        apiKey,
         onEvent: (e) => {
+          if (e.type === "error") errored = true;
           void send(e.type, e);
         },
       });
       sessions.set(sessionId, result.messages.slice(-MAX_HISTORY_MESSAGES));
     } catch (err) {
-      await send("error", { type: "error", message: describeError(err) });
+      // runAgent already reported its own failure; only surface errors raised outside it.
+      if (!errored) await send("error", { type: "error", message: describeError(err) });
     }
     await chain;
   });

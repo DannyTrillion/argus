@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { Sparkles, History as HistoryIcon, ChevronDown, ChevronLeft, ArrowDown, Plus, Share2, Check } from "lucide-react";
+import { Sparkles, History as HistoryIcon, ChevronDown, ChevronLeft, ArrowDown, Plus, Share2, Check, KeyRound } from "lucide-react";
+import { getAnthropicKey, onKeyChange } from "../lib/keys";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import clsx from "clsx";
@@ -82,6 +83,10 @@ export default function Analyst() {
   const [params, setParams] = useSearchParams();
   const chat = useChat(params.get("c"));
   const coins = useQuery({ queryKey: ["coins", 200], queryFn: () => api.coins(200), staleTime: 60_000 });
+  const keys = useQuery({ queryKey: ["keys"], queryFn: api.keys, staleTime: 60_000 });
+  const [ownKey, setOwnKey] = useState(Boolean(getAnthropicKey()));
+  useEffect(() => onKeyChange(() => setOwnKey(Boolean(getAnthropicKey()))), []);
+  const locked = keys.data ? !keys.data.serverKey && !ownKey : false;
   const ask = (q: string) => chat.send(expandMentions(q, coins.data?.coins));
   const [histOpen, setHistOpen] = useState(false);
   const bottom = useRef<HTMLDivElement>(null);
@@ -207,6 +212,18 @@ export default function Analyst() {
 
         {/* Thread: its own scroll region on desktop, window scroll on phones. */}
         <div ref={thread} className="scroll-thin relative min-h-0 flex-1 space-y-4 lg:overflow-y-auto lg:pr-2">
+          {locked && (
+            <div className="glass flex flex-col gap-3 border-gold/30 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold-dim text-gold"><KeyRound size={16} /></span>
+                <div>
+                  <div className="text-[14px] font-medium">Connect a key to ask</div>
+                  <div className="text-[12.5px] leading-relaxed text-ink-3">This deployment has no shared Anthropic key. Add your own and it stays in this browser. Everything else on Argus works without one.</div>
+                </div>
+              </div>
+              <Link to="/keys" className="pill inline-flex shrink-0 items-center gap-1.5 bg-gold px-3.5 py-2 text-[12.5px] font-medium text-bg hover:bg-gold-2">Add my key</Link>
+            </div>
+          )}
           {chat.messages.length === 0 && (
             <div className="glass hud p-6 sm:p-8">
               <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center">

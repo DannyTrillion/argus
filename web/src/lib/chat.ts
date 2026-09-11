@@ -5,6 +5,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CallRecord } from "./api";
 import { readConversations, saveConversation, titleFrom, type Conversation } from "./conversations";
+import { keyHeaders } from "./keys";
+
+/** Shown when neither this deployment nor this browser has an Anthropic key. */
+export const NO_KEY_MESSAGE = "No Anthropic key connected. Add yours on the Keys page to ask the analyst.";
 
 export interface Step {
   name: string;
@@ -83,10 +87,11 @@ export function useChat(initialId?: string | null) {
       try {
         const res = await fetch("/api/chat", {
           method: "POST",
-          headers: { "content-type": "application/json" },
+          headers: { "content-type": "application/json", ...keyHeaders() },
           body: JSON.stringify({ sessionId: cur.sessionId, message: question, history: transcript }),
           signal: ctrl.signal,
         });
+        if (res.status === 401) throw new Error(NO_KEY_MESSAGE);
         if (!res.ok || !res.body) throw new Error(`Request failed (${res.status})`);
         const reader = res.body.getReader();
         const dec = new TextDecoder();

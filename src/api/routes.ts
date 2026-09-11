@@ -12,6 +12,7 @@ import { findings, scan } from "../services/watch.js";
 import { stream } from "../services/stream.js";
 import { getSettings, setAutomationPaused } from "../services/settings.js";
 import { createShare, readShare } from "../services/share.js";
+import { KEY_HEADER, canRunModel, keyStatus, resolveAnthropicKey, testAnthropicKey } from "../services/keys.js";
 
 export const api = new Hono();
 
@@ -77,8 +78,20 @@ api.get("/explain", async (c) => {
 // Argus noticed: findings feed and a manual scan trigger for demos.
 api.get("/findings", (c) => c.json(findings()));
 api.post("/watch/scan", async (c) => {
-  const fresh = await scan();
+  const header = c.req.header(KEY_HEADER);
+  if (!canRunModel(header)) return c.json({ error: "no_key", message: "No Anthropic key. Add yours on the Keys page to run investigations." }, 401);
+  const fresh = await scan(resolveAnthropicKey(header));
   return c.json({ fresh, ...findings() });
+});
+
+// Bring your own key: what this deployment has, and a one-token test of a caller's key.
+// The key in the test body is used for that call only and never stored or logged.
+api.get("/keys", (c) => c.json(keyStatus()));
+api.post("/keys/test", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as { key?: string };
+  const key = (body.key ?? "").trim();
+  if (!key) return c.json({ ok: false, error: "key is required" }, 400);
+  return c.json(await testAnthropicKey(key));
 });
 
 // Unified story stream for the Home carousel.

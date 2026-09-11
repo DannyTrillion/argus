@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, XCircle, Activity, Pause, Play } from "lucide-react";
+import { CheckCircle2, XCircle, Activity, Pause, Play, KeyRound } from "lucide-react";
+import { Link } from "react-router-dom";
+import { getAnthropicKey } from "../lib/keys";
 import clsx from "clsx";
 import { api } from "../lib/api";
 import { timeAgo } from "../lib/format";
@@ -19,6 +21,8 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
 function AutomationCard() {
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["automation"], queryFn: api.automation });
+  const keys = useQuery({ queryKey: ["keys"], queryFn: api.keys, staleTime: 60_000 });
+  const ownKey = Boolean(getAnthropicKey());
   const toggle = useMutation({ mutationFn: api.setAutomation, onSuccess: (d) => { qc.setQueryData(["automation"], d); void qc.invalidateQueries({ queryKey: ["findings"] }); } });
   const paused = data?.automationPaused ?? false;
   return (
@@ -28,8 +32,12 @@ function AutomationCard() {
         <Stat label="Analyst model" value={data?.analystModel ?? "—"} sub="questions you ask" />
         <Stat label="Automation model" value={data?.automationModel ?? "—"} sub="brief, investigations, headlines" />
       </div>
+      <div className="glass-2 mt-3 flex items-center justify-between gap-3 rounded-2xl px-3.5 py-2.5 text-[12px]">
+        <span className="flex items-center gap-2 text-ink-2"><KeyRound size={13} className="text-gold" /> Shared key {keys.data?.serverKey ? "on" : "off"} · your key {ownKey ? "saved" : "not set"}</span>
+        <Link to="/keys" className="text-gold hover:underline">Keys</Link>
+      </div>
       <p className="mt-3 text-[12px] leading-relaxed text-ink-3">
-        Every model call bills your Anthropic key. The brief runs every 4h and the watch loop every 30 min with at most 6 investigations a day. Pause both here when you are not using Argus; the Analyst keeps working on demand.
+        Every model call bills the server's Anthropic key, or a visitor's own key when they bring one. The brief runs every 4h and the watch loop every 30 min with at most 6 investigations a day. Pause both here when you are not using Argus; the Analyst keeps working on demand.
       </p>
       <button
         onClick={() => toggle.mutate(!paused)}

@@ -178,7 +178,7 @@ function questionFor(s: Signal): string {
   return "What changed in market sentiment today?";
 }
 
-async function investigate(s: Signal): Promise<Finding> {
+async function investigate(s: Signal, apiKey?: string | null): Promise<Finding> {
   const started = Date.now();
   let calls = 0;
   let credits = 0;
@@ -190,14 +190,14 @@ async function investigate(s: Signal): Promise<Finding> {
   const messages: BetaMessageParam[] = [{ role: "user", content: prompt }];
   let raw = "";
   try {
-    const r = await runAgent({ messages, maxIterations: 8, model: config.automationModel, onEvent: (e) => { if (e.type === "api_call") { calls += 1; credits += e.record.creditCount; } } });
+    const r = await runAgent({ messages, maxIterations: 8, model: config.automationModel, apiKey, onEvent: (e) => { if (e.type === "api_call") { calls += 1; credits += e.record.creditCount; } } });
     raw = r.text.replace(/<followups>[\s\S]*$/i, "").trim();
   } catch (err) {
     raw = `Investigation failed: ${err instanceof Error ? err.message : String(err)}`;
   }
   let { headline, deck, body } = splitHeadline(raw, s.title);
   if (headline === s.title || !deck) {
-    const r = await headlineFor(s.title, body);
+    const r = await headlineFor(s.title, body, apiKey);
     if (r) ({ headline, deck } = r);
     else deck = deck || s.detail;
   }
@@ -216,10 +216,10 @@ export function splitHeadline(raw: string, fallback: string): { headline: string
 }
 
 /** Cheap, tool-free call that turns a finding into a headline and a deck. */
-async function headlineFor(title: string, summary: string): Promise<{ headline: string; deck: string } | null> {
+async function headlineFor(title: string, summary: string, apiKey?: string | null): Promise<{ headline: string; deck: string } | null> {
   try {
     const { default: Anthropic } = await import("@anthropic-ai/sdk");
-    const client = new Anthropic();
+    const client = apiKey ? new Anthropic({ apiKey }) : new Anthropic();
     const res = await client.messages.create({
       model: config.automationModel,
       max_tokens: 200,
@@ -240,11 +240,11 @@ function needsHeadline(f: Finding): boolean {
 }
 
 /** Give findings without a real headline one. Runs at boot and after each scan. */
-export async function ensureHeadlines(): Promise<number> {
+export async function ensureHeadlines(apiKey?: string | null): Promise<number> {
   const missing = state.findings.filter(needsHeadline);
   let n = 0;
   for (const f of missing) {
-    const r = await headlineFor(f.title, f.summary);
+    const r = await headlineFor(f.title, f.summary, apiKey);
     if (r) {
       f.headline = r.headline;
       f.deck = r.deck;
@@ -258,7 +258,7 @@ export async function ensureHeadlines(): Promise<number> {
   return n;
 }
 
-export function scan(): Promise<Finding[]> {
+export function scan(apiKey?: string | null): Promise<Finding[]> {
   if (scanning) return scanning;
   scanning = (async () => {
     const fresh: Finding[] = [];
@@ -277,14 +277,14 @@ export function scan(): Promise<Finding[]> {
       for (const s of eligible.slice(0, budget)) {
         state.cooldowns[s.fingerprint] = new Date().toISOString();
         state.investigationsToday.count += 1;
-        const f = await investigate(s);
+        const f = await investigate(s, apiKey);
         fresh.push(f);
         state.findings = [f, ...state.findings].slice(0, MAX_FINDINGS);
         save();
       }
       // Prune old cooldowns, then make sure every finding has a real headline.
       for (const [k, v] of Object.entries(state.cooldowns)) if (now - Date.parse(v) > 2 * COOLDOWN_MS) delete state.cooldowns[k];
-      await ensureHeadlines();
+      await ensureHeadlines(apiKey);
     } catch (err) {
       console.error("[watch] scan failed:", err instanceof Error ? err.message : err);
     } finally {

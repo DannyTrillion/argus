@@ -76,6 +76,8 @@ export interface CompareResult { days: number; stats: Array<SeriesStats & { sour
 export interface MapEntry { id: number; name: string; symbol: string; slug: string; rank?: number }
 export interface Capability { name: string; endpoint: string; ok: boolean; note?: string }
 export interface Automation { automationPaused: boolean; analystModel: string; automationModel: string }
+export interface KeyStatus { serverKey: boolean; cmcKey: boolean; analystModel: string; automationModel: string }
+export type KeyTest = { ok: true; model: string } | { ok: false; error: string }
 export interface Status {
   model: string; automationModel?: string; automationPaused?: boolean; keyless: boolean;
   plan: { credit_limit_monthly?: number; credit_limit_monthly_reset?: string; rate_limit_minute?: number } | null;
@@ -117,6 +119,8 @@ export class ApiError extends Error {
   }
 }
 
+import { keyHeaders } from "./keys";
+
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`/api${path}`);
   if (!res.ok) {
@@ -156,8 +160,13 @@ export const api = {
     return (await res.json()) as Automation;
   },
   scanNow: async () => {
-    const res = await fetch("/api/watch/scan", { method: "POST" });
-    if (!res.ok) throw new ApiError(res.status, res.statusText);
+    const res = await fetch("/api/watch/scan", { method: "POST", headers: keyHeaders() });
+    if (!res.ok) throw new ApiError(res.status, ((await res.json().catch(() => ({}))) as { message?: string }).message ?? res.statusText);
     return (await res.json()) as Findings;
+  },
+  keys: () => get<KeyStatus>("/keys"),
+  testKey: async (key: string) => {
+    const res = await fetch("/api/keys/test", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ key }) });
+    return (await res.json()) as KeyTest;
   },
 };

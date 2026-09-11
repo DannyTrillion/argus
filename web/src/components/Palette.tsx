@@ -19,6 +19,7 @@ const PAGES: Item[] = [
   { id: "p-watch", kind: "page", label: "Watchlist", to: "/watchlist", icon: <Star size={14} /> },
   { id: "p-analyst", kind: "page", label: "Analyst", to: "/analyst", icon: <MessageSquareText size={14} /> },
   { id: "p-status", kind: "page", label: "Status", to: "/status", icon: <LayoutGrid size={14} /> },
+  { id: "p-keys", kind: "page", label: "Keys", hint: "bring your own Anthropic key", to: "/keys", icon: <LayoutGrid size={14} /> },
 ];
 const ASKS = [
   "How is the market today?",

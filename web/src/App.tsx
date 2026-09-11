@@ -7,6 +7,7 @@ import Watchlist from "./pages/Watchlist";
 import Analyst from "./pages/Analyst";
 import Status from "./pages/Status";
 import Shared from "./pages/Shared";
+import Keys from "./pages/Keys";
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="analyst" element={<Analyst />} />
         <Route path="status" element={<Status />} />
         <Route path="s/:id" element={<Shared />} />
+        <Route path="keys" element={<Keys />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

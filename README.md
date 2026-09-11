@@ -68,6 +68,21 @@ supports. On the free Basic plan, OHLCV, trending, gainers/losers and news retur
 (daily closes), movers from a filtered listings screen sorted locally. The UI and the
 agent both say which source was used.
 
+## Keys: shared or bring your own
+
+The market screens need no Anthropic key. The analyst, Ask Argus and Scan now run on
+Claude, which bills one. Two ways to provide it:
+
+- **Shared:** set `ANTHROPIC_API_KEY` on the server and every visitor uses it. The pause
+  switch on `/status`, `WATCH_MAX_PER_DAY` and a spend limit on the Anthropic workspace
+  bound the cost.
+- **Bring your own:** visitors paste a key on `/keys`. It is tested with a one-token request,
+  saved in that browser's local storage only, and sent as the `x-anthropic-key` header with
+  each question. The server uses it for that request and never logs or stores it
+  ([src/services/keys.ts](src/services/keys.ts)). The scheduled brief and watch loop only
+  ever use the server key. With no server key, the Analyst shows a connect card instead of
+  an error, and `POST /api/chat` and `POST /api/watch/scan` return 401 `no_key`.
+
 ## CoinMarketCap endpoints used
 
 All under `https://pro-api.coinmarketcap.com`, authenticated with `X-CMC_PRO_API_KEY`.
@@ -102,7 +117,7 @@ Every call is logged with endpoint, query, status, credit cost and a response pr
 
 ```
 web/                    React 19 + Vite + Tailwind v4 + ECharts + motion
-  src/pages/            Home, Explore, Coin, Watchlist, Analyst, Status, Shared
+  src/pages/            Home, Explore, Coin, Watchlist, Analyst, Status, Shared, Keys
   src/components/       chart cards, tiles, gauges, sparklines, shell
   src/lib/              typed API client, streaming chat client, chart hook, formatting
 
@@ -117,6 +132,7 @@ src/services/stream.ts  "Argus noticed" feed: findings first, padded with brief 
 src/services/settings.ts pause switch for the automation
 src/services/share.ts   read-only shared conversations
 src/services/status.ts  plan usage, endpoint probes, automation state
+src/services/keys.ts    bring-your-own Anthropic key: resolve per request, one-token test
 src/agent/agent.ts      Claude tool-runner loop, streams text and tool events
 src/agent/tools.ts      18 tools wrapping CMC endpoints + derived analytics
 src/agent/analytics.ts  returns, drawdown, volatility, correlation (pure, unit tested)
