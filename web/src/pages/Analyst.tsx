@@ -44,7 +44,7 @@ function Bubble({ m, live, onFollowup, onRetry, compact }: { m: ChatMessage; liv
           )}
         </div>
       )}
-      {!text && !m.done && (
+      {!text && !m.done && !(compact && live) && (
         <div className="flex items-center gap-3 text-[12.5px] text-ink-3">
           <Mascot size={40} thinking />
           {m.thinking ? <span className="italic">{m.thinking.slice(-220)}</span> : "Reading the market…"}

@@ -93,7 +93,7 @@ function LiqBars({ liq }: { liq: Liq }) {
       grid: { left: 8, right: 8, top: 28, bottom: 8, containLabel: true },
       tooltip: { ...tooltipStyle, trigger: "axis", valueFormatter: (v: number) => usd(v, { compact: true }) },
       legend: { top: 0, left: 0, textStyle: { color: palette.ink2, fontSize: 11 }, icon: "roundRect", itemWidth: 10, itemHeight: 10 },
-      xAxis: { type: "value", splitNumber: 3, ...axisStyle, axisLabel: { ...axisStyle.axisLabel, formatter: (v: number) => usd(v, { compact: true }) } },
+      xAxis: { type: "value", splitNumber: 3, ...axisStyle, axisLabel: { ...axisStyle.axisLabel, hideOverlap: true, formatter: (v: number) => (v >= 1e9 ? `$${(v / 1e9).toFixed(1)}B` : v >= 1e6 ? `$${Math.round(v / 1e6)}M` : v === 0 ? "0" : `$${Math.round(v / 1e3)}K`) } },
       yAxis: { type: "category", data: rows.map((r) => r[0]), ...axisStyle, splitLine: { show: false } },
       series: [
         { name: "Longs liquidated", type: "bar", stack: "a", data: rows.map((r) => r[1]), itemStyle: { color: palette.down }, barMaxWidth: 18 },
