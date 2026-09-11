@@ -22,7 +22,7 @@ const SUGGESTIONS: Array<{ group: string; items: string[] }> = [
   { group: "Sectors", items: ["Which sectors are rotating this week?", "Are memes leading or lagging?", "Is money moving into privacy coins?"] },
 ];
 
-function Bubble({ m, live, onFollowup, onRetry, compact }: { m: ChatMessage; live: boolean; onFollowup: (q: string) => void; onRetry: () => void; compact: boolean }) {
+function Bubble({ m, live, onFollowup, onRetry, compact, isLatest }: { m: ChatMessage; live: boolean; onFollowup: (q: string) => void; onRetry: () => void; compact: boolean; isLatest: boolean }) {
   const [showWork, setShowWork] = useState(false);
   if (m.role === "user") {
     return <div className="glass-2 ml-auto max-w-[85%] rounded-3xl rounded-br-lg px-4 py-2.5 text-[13.5px] sm:max-w-[75%]">{stripMentions(m.text)}</div>;
@@ -60,7 +60,8 @@ function Bubble({ m, live, onFollowup, onRetry, compact }: { m: ChatMessage; liv
           <button onClick={onRetry} className="pill bg-surface-2 px-3 py-1 text-[12px] text-ink hover:bg-gold hover:text-bg">Try again</button>
         </div>
       )}
-      {m.done && m.followups && m.followups.length > 0 && (
+      {/* On phones the latest answer's follow-ups live in the row above the composer instead. */}
+      {m.done && m.followups && m.followups.length > 0 && !(compact && isLatest) && (
         <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mt-5 flex flex-wrap gap-2">
           {m.followups.map((q) => (
             <button key={q} onClick={() => onFollowup(q)} className="glass-2 pill px-3 py-1.5 text-left text-[12.5px] text-ink-2 hover:border-gold/40 hover:text-ink">{q}</button>
@@ -233,7 +234,7 @@ export default function Analyst() {
           )}
           {chat.messages.map((m, i) => (
             <div key={i} className="flex">
-              <Bubble m={m} live={chat.busy && i === chat.messages.length - 1} onFollowup={ask} onRetry={chat.retry} compact={!isDesktop} />
+              <Bubble m={m} live={chat.busy && i === chat.messages.length - 1} onFollowup={ask} onRetry={chat.retry} compact={!isDesktop} isLatest={i === chat.messages.length - 1} />
             </div>
           ))}
           <div ref={bottom} className="h-px" />
