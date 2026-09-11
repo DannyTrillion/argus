@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { Sparkles, History as HistoryIcon, ChevronDown, ChevronLeft, ArrowDown, Plus } from "lucide-react";
+import { Sparkles, History as HistoryIcon, ChevronDown, ChevronLeft, ArrowDown, Plus, Share2, Check } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import clsx from "clsx";
 import { useChat, displayText, type ChatMessage } from "../lib/chat";
@@ -132,9 +133,42 @@ export default function Analyst() {
 
   const latest = [...chat.messages].reverse().find((m) => m.role === "assistant") ?? null;
   const title = chat.messages.length ? stripMentions(chat.conversation.title) : "Ask Argus";
+  const nav = useNavigate();
+
+  // Share: post a slim transcript, copy the link.
+  const [shared, setShared] = useState<"idle" | "busy" | "done" | "error">("idle");
+  const share = async () => {
+    if (chat.messages.length === 0 || shared === "busy") return;
+    setShared("busy");
+    try {
+      const slim = chat.messages.filter((m) => m.done !== false).map((m) => ({ role: m.role, text: m.text, steps: m.steps.map((s) => ({ name: s.name, input: s.input, ok: s.ok, ms: s.ms, data: s.data })), calls: m.calls.map((c) => ({ ...c, preview: c.preview.slice(0, 200) })), followups: [], done: true }));
+      const r = await api.share(chat.conversation.title, slim);
+      const url = `${window.location.origin}${r.url}`;
+      try { await navigator.clipboard.writeText(url); } catch { /* clipboard blocked */ }
+      setShared("done");
+      setTimeout(() => setShared("idle"), 2000);
+    } catch {
+      setShared("error");
+      setTimeout(() => setShared("idle"), 2000);
+    }
+  };
+
+  // Swipe from the left edge to go Home on phones.
+  const swipe = useRef<{ x: number; y: number } | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => { const t = e.touches[0]; swipe.current = t.clientX < 28 ? { x: t.clientX, y: t.clientY } : null; };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (!swipe.current) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - swipe.current.x;
+    const dy = Math.abs(t.clientY - swipe.current.y);
+    swipe.current = null;
+    if (dx > 80 && dy < 60) nav("/");
+  };
+
+  const QUICK = ["How is the market today?", "Why is @SOL moving today?", "Compare BTC, ETH and SOL risk over 90 days", "Which sectors are rotating this week?", "What got liquidated in the last 24h?"];
 
   return (
-    <div className="grid min-w-0 gap-4 lg:h-[calc(100dvh-112px)] lg:grid-cols-[minmax(0,1fr)_340px]">
+    <div className="grid min-w-0 gap-4 lg:h-[calc(100dvh-112px)] lg:grid-cols-[minmax(0,1fr)_340px]" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       {/* Phone top bar: back home, title, history, new. */}
       <div className="fixed inset-x-0 top-0 z-20 flex items-center gap-2 border-b border-line bg-[rgba(10,10,11,0.85)] px-3 py-2.5 backdrop-blur-xl lg:hidden" style={{ paddingTop: "max(10px, env(safe-area-inset-top))" }}>
         <Link to="/" className="glass-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-2" aria-label="Back to Home"><ChevronLeft size={18} /></Link>
@@ -142,6 +176,9 @@ export default function Analyst() {
           <div className="flex items-center gap-1 text-[10.5px] uppercase tracking-wider text-gold"><Sparkles size={10} /> Argus</div>
           <div className="truncate text-[14px] font-medium">{title}</div>
         </div>
+        {chat.messages.length > 0 && (
+          <button onClick={share} className="glass-2 flex h-9 w-9 items-center justify-center rounded-full text-ink-2" aria-label="Share" title="Copy share link">{shared === "done" ? <Check size={16} className="text-up" /> : <Share2 size={15} />}</button>
+        )}
         <button onClick={() => setHistOpen((o) => !o)} className="glass-2 flex h-9 w-9 items-center justify-center rounded-full text-ink-2" aria-label="History"><HistoryIcon size={16} /></button>
         <button onClick={chat.reset} className="glass-2 flex h-9 w-9 items-center justify-center rounded-full text-ink-2" aria-label="New conversation"><Plus size={17} /></button>
       </div>
@@ -154,7 +191,12 @@ export default function Analyst() {
             <h1 className="font-display mt-1 truncate text-[30px] font-light leading-tight tracking-tight">{title}</h1>
           </div>
           {chat.messages.length > 0 && (
-            <button onClick={chat.reset} className="glass-2 pill flex items-center gap-1.5 px-3 py-1.5 text-[12px] text-ink-2 hover:text-ink"><Sparkles size={12} /> New</button>
+            <div className="flex items-center gap-2">
+              <button onClick={share} className="glass-2 pill flex items-center gap-1.5 px-3 py-1.5 text-[12px] text-ink-2 hover:text-ink">
+                {shared === "done" ? <><Check size={12} className="text-up" /> Link copied</> : shared === "error" ? "Could not share" : <><Share2 size={12} /> Share</>}
+              </button>
+              <button onClick={chat.reset} className="glass-2 pill flex items-center gap-1.5 px-3 py-1.5 text-[12px] text-ink-2 hover:text-ink"><Sparkles size={12} /> New</button>
+            </div>
           )}
         </div>
 
@@ -208,6 +250,13 @@ export default function Analyst() {
           <Composer busy={chat.busy} onSend={chat.send} onStop={chat.stop} autoFocus={chat.messages.length === 0 && isDesktop} />
         </div>
         <motion.div layoutId="dock" className="fixed inset-x-3 z-30 lg:hidden" style={{ bottom: "max(12px, env(safe-area-inset-bottom))" }} transition={{ type: "spring", stiffness: 260, damping: 30 }}>
+          {chat.messages.length > 0 && !chat.busy && (
+            <div className="scroll-thin -mx-1 mb-2 flex gap-1.5 overflow-x-auto px-1 pb-0.5" style={{ scrollbarWidth: "none" }}>
+              {(latest?.followups?.length ? latest.followups : QUICK).map((q) => (
+                <button key={q} onClick={() => ask(q)} className="glass-2 pill shrink-0 px-3 py-1.5 text-[12px] text-ink-2">{q}</button>
+              ))}
+            </div>
+          )}
           <Composer busy={chat.busy} onSend={chat.send} onStop={chat.stop} />
         </motion.div>
       </div>

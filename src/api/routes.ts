@@ -11,6 +11,7 @@ import { explainMove, type Window } from "../services/explain.js";
 import { findings, scan } from "../services/watch.js";
 import { stream } from "../services/stream.js";
 import { getSettings, setAutomationPaused } from "../services/settings.js";
+import { createShare, readShare } from "../services/share.js";
 
 export const api = new Hono();
 
@@ -88,4 +89,19 @@ api.get("/automation", (c) => c.json({ ...getSettings(), analystModel: config.mo
 api.post("/automation", async (c) => {
   const body = (await c.req.json().catch(() => ({}))) as { paused?: boolean };
   return c.json({ ...setAutomationPaused(Boolean(body.paused)), analystModel: config.model, automationModel: config.automationModel });
+});
+
+// Read-only conversation shares.
+api.post("/share", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as { title?: unknown; messages?: unknown };
+  try {
+    const s = createShare(body);
+    return c.json({ id: s.id, url: `/s/${s.id}` });
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, 400);
+  }
+});
+api.get("/share/:id", (c) => {
+  const s = readShare(c.req.param("id"));
+  return s ? c.json(s) : c.json({ error: "not found" }, 404);
 });

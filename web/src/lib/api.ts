@@ -144,6 +144,12 @@ export const api = {
   findings: () => get<Findings>("/findings"),
   stream: () => get<Stream>("/stream"),
   automation: () => get<Automation>("/automation"),
+  share: async (title: string, messages: unknown[]) => {
+    const res = await fetch("/api/share", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ title, messages }) });
+    if (!res.ok) throw new ApiError(res.status, ((await res.json().catch(() => ({}))) as { error?: string }).error ?? res.statusText);
+    return (await res.json()) as { id: string; url: string };
+  },
+  readShare: (id: string) => get<{ id: string; title: string; createdAt: string; messages: import("./chat").ChatMessage[] }>(`/share/${encodeURIComponent(id)}`),
   setAutomation: async (paused: boolean) => {
     const res = await fetch("/api/automation", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ paused }) });
     if (!res.ok) throw new ApiError(res.status, res.statusText);
