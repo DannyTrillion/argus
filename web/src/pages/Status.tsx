@@ -187,7 +187,7 @@ export default function Status() {
         <Skeleton className="h-[300px]" />
       ) : (
         <>
-          <div className="grid gap-4 lg:grid-cols-3">
+          <div className="grid gap-4 lg:grid-flow-row-dense lg:grid-cols-3">
             <AutomationCard />
             <PreferencesCard />
             <SpendCard />
