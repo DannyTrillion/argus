@@ -4,15 +4,17 @@
  */
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Link } from "react-router-dom";
 import { motion } from "motion/react";
-import { Info, X } from "lucide-react";
+import { Info, X, ArrowRight, BookOpen, Sparkles } from "lucide-react";
+import { timeAgo } from "../../lib/format";
 import clsx from "clsx";
 import { EXPLAINERS, readNow, zoneFor, type ExplainTopic, type Live, type Tone } from "../../lib/explainers";
 
 const TONE: Record<Tone, string> = { down: "#ef6f6f", gold: "#e7c46a", up: "#6fd39c", blue: "#8fb7ff" };
 const WIDTH = 368;
 
-export function ExplainButton({ topic, live, className }: { topic: ExplainTopic; live?: Live; className?: string }) {
+export function ExplainButton({ topic, live, className, iconOnly, tourId }: { topic: ExplainTopic; live?: Live; className?: string; iconOnly?: boolean; tourId?: string }) {
   const [open, setOpen] = useState(false);
   const btn = useRef<HTMLButtonElement>(null);
   return (
@@ -24,10 +26,11 @@ export function ExplainButton({ topic, live, className }: { topic: ExplainTopic;
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-label={`Explain ${EXPLAINERS[topic].title}`}
+        data-tour={tourId}
         className={clsx("pill inline-flex shrink-0 items-center gap-1 px-2 py-1 text-[11px] transition-colors hover:bg-gold-dim hover:text-gold", open ? "bg-gold-dim text-gold" : "text-ink-3", className)}
       >
         <Info size={11} />
-        <span className="hidden sm:inline">Explain</span>
+        <span className={iconOnly ? "sr-only" : "hidden sm:inline"}>Explain</span>
       </button>
       {open && <ExplainPanel topic={topic} live={live} anchor={btn} onClose={() => setOpen(false)} />}
     </>
@@ -110,7 +113,10 @@ function ExplainPanel({ topic, live, anchor, onClose }: { topic: ExplainTopic; l
 
       {reading && (
         <div className="mt-3 rounded-2xl border border-gold/20 bg-gold-dim px-3.5 py-3">
-          <div className="text-[10.5px] uppercase tracking-wider text-gold">Right now</div>
+          <div className="flex items-center justify-between gap-2 text-[10.5px] uppercase tracking-wider text-gold">
+            <span>Right now</span>
+            {live?.asOf && <span className="font-mono normal-case tracking-normal text-ink-3">updated {timeAgo(live.asOf)}</span>}
+          </div>
           <p className="mt-1 text-[13px] leading-relaxed text-ink">{reading}</p>
           {ex.scale && typeof live?.value === "number" && <Scale topic={topic} value={live.value} />}
         </div>
@@ -130,6 +136,21 @@ function ExplainPanel({ topic, live, anchor, onClose }: { topic: ExplainTopic; l
         {ex.moves.map((m) => (
           <span key={m} className="glass-2 pill px-2.5 py-1 text-[11.5px] text-ink-2">{m}</span>
         ))}
+      </div>
+
+      {/* A separate door, not the Explain action itself: only where today's "why" is a real question. */}
+      {ex.analyse && (
+        <div className="mt-4 border-t border-line pt-3.5">
+          <p className="text-[11.5px] leading-relaxed text-ink-3">This explains what the number means. For why it moved today, the analyst works through live data.</p>
+          <Link to={`/analyst?q=${encodeURIComponent(ex.analyse.q)}`} onClick={onClose} className="glass-2 pill mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] text-ink-2 hover:border-gold/40 hover:text-ink">
+            <Sparkles size={12} className="text-gold" /> {ex.analyse.label} <ArrowRight size={12} />
+          </Link>
+        </div>
+      )}
+      <div className={clsx("flex justify-end", ex.analyse ? "mt-3" : "mt-4")}>
+        <Link to={`/learn#${topic}`} onClick={onClose} className="inline-flex items-center gap-1.5 text-[11.5px] text-ink-3 hover:text-gold">
+          <BookOpen size={12} /> All explainers
+        </Link>
       </div>
     </>
   );

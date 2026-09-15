@@ -37,10 +37,10 @@ function List({ title, coins }: { title: string; coins: Coin[] }) {
 }
 
 export function Movers() {
-  const { data, isLoading } = useQuery({ queryKey: ["movers"], queryFn: api.movers });
+  const { data, isLoading, dataUpdatedAt } = useQuery({ queryKey: ["movers"], queryFn: api.movers });
   return (
     <Card className="lg:col-span-2">
-      <CardTitle right={<div className="flex items-center gap-2"><span className="hidden text-[11px] text-ink-3 sm:inline">24h · cap ≥ $50M · vol ≥ $5M</span><ExplainButton topic="movers" live={data ? { extra: { topGainer: moverLabel(data.gainers[0]), topLoser: moverLabel(data.losers[0]) } } : undefined} /></div>}>Movers that matter</CardTitle>
+      <CardTitle right={<div className="flex items-center gap-2"><span className="hidden text-[11px] text-ink-3 sm:inline">24h · cap ≥ $50M · vol ≥ $5M</span><ExplainButton topic="movers" live={data ? { asOf: dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : null, extra: { topGainer: moverLabel(data.gainers[0]), topLoser: moverLabel(data.losers[0]) } } : undefined} /></div>}>Movers that matter</CardTitle>
       {isLoading || !data ? (
         <Skeleton className="h-[280px]" />
       ) : (

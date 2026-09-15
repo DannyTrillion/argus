@@ -12,11 +12,15 @@ import { PriceChart } from "../components/coin/PriceChart";
 import { AskInline } from "../components/coin/AskInline";
 import { Peers } from "../components/coin/Peers";
 import { AlertButton } from "../components/coin/AlertButton";
+import { ExplainButton } from "../components/ui/Explain";
 
-function Stat({ label, value, sub }: { label: string; value: string; sub?: React.ReactNode }) {
+function Stat({ label, value, sub, explain }: { label: string; value: string; sub?: React.ReactNode; explain?: React.ReactNode }) {
   return (
     <div className="glass-2 rounded-2xl p-3.5">
-      <div className="text-[11px] text-ink-3">{label}</div>
+      <div className="flex items-center justify-between gap-1">
+        <div className="text-[11px] text-ink-3">{label}</div>
+        {explain}
+      </div>
       <div className="mt-1 font-mono text-[15px] text-ink">{value}</div>
       {sub && <div className="mt-0.5 text-[11px] text-ink-3">{sub}</div>}
     </div>
@@ -26,13 +30,14 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: React
 export default function CoinPage() {
   const { id } = useParams();
   const cid = Number(id);
-  const { data, isLoading, error } = useQuery({ queryKey: ["coin", cid], queryFn: () => api.coin(cid), enabled: Number.isInteger(cid), refetchInterval: 60_000 });
+  const { data, isLoading, error, dataUpdatedAt } = useQuery({ queryKey: ["coin", cid], queryFn: () => api.coin(cid), enabled: Number.isInteger(cid), refetchInterval: 60_000 });
   const wl = useWatchlist();
 
   if (isLoading) return <div className="space-y-4"><Skeleton className="h-24" /><Skeleton className="h-[420px]" /></div>;
   if (error || !data) return <Card>Could not load this coin. {error instanceof Error ? error.message : ""}</Card>;
 
   const { coin, info, performance, risk } = data;
+  const asOf = dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : null;
   const q = coin.quote;
   const ath = performance?.periods.all_time;
   const fromAth = ath && q.price ? ((q.price - ath.high) / ath.high) * 100 : null;
@@ -90,7 +95,7 @@ export default function CoinPage() {
               <Stat label="Circulating" value={compact(coin.circulating_supply)} sub={supplyPct ? `${supplyPct.toFixed(1)}% of max ${compact(coin.max_supply)}` : coin.max_supply ? `max ${compact(coin.max_supply)}` : "no max supply"} />
               <Stat label="30d" value={pct(q.percent_change_30d)} />
               <Stat label="90d" value={pct(q.percent_change_90d)} />
-              {ath && <Stat label="All-time high" value={usd(ath.high)} sub={fromAth !== null ? <span>{pct(fromAth)} from ATH · {ath.high_timestamp?.slice(0, 10)}</span> : undefined} />}
+              {ath && <Stat label="All-time high" explain={<ExplainButton topic="ath" live={{ value: fromAth, asOf }} iconOnly className="-my-1 -mr-1.5" />} value={usd(ath.high)} sub={fromAth !== null ? <span>{pct(fromAth)} from ATH · {ath.high_timestamp?.slice(0, 10)}</span> : undefined} />}
               {ath && <Stat label="All-time low" value={usd(ath.low)} sub={ath.low_timestamp?.slice(0, 10)} />}
             </div>
           </Card>
@@ -100,9 +105,9 @@ export default function CoinPage() {
             {risk ? (
               <div className="grid grid-cols-2 gap-2.5">
                 <Stat label="Return" value={pct(risk.total_return_pct)} />
-                <Stat label="Annualized vol" value={`${risk.annualized_volatility_pct.toFixed(1)}%`} />
-                <Stat label="Max drawdown" value={pct(risk.max_drawdown_pct)} />
-                <Stat label="Corr. with BTC" value={risk.correlation_with_btc === null ? "—" : risk.correlation_with_btc.toFixed(2)} sub={risk.correlation_with_btc !== null ? (risk.correlation_with_btc > 0.8 ? "moves with BTC" : risk.correlation_with_btc > 0.5 ? "partly independent" : "largely independent") : undefined} />
+                <Stat label="Annualized vol" value={`${risk.annualized_volatility_pct.toFixed(1)}%`} explain={<ExplainButton topic="volatility" live={{ value: risk.annualized_volatility_pct, asOf }} iconOnly className="-my-1 -mr-1.5" />} />
+                <Stat label="Max drawdown" value={pct(risk.max_drawdown_pct)} explain={<ExplainButton topic="drawdown" live={{ value: risk.max_drawdown_pct, asOf }} iconOnly className="-my-1 -mr-1.5" />} />
+                <Stat label="Corr. with BTC" explain={<ExplainButton topic="correlation" live={{ value: risk.correlation_with_btc, asOf }} iconOnly className="-my-1 -mr-1.5" />} value={risk.correlation_with_btc === null ? "—" : risk.correlation_with_btc.toFixed(2)} sub={risk.correlation_with_btc !== null ? (risk.correlation_with_btc > 0.8 ? "moves with BTC" : risk.correlation_with_btc > 0.5 ? "partly independent" : "largely independent") : undefined} />
                 <Stat label="Best day" value={pct(risk.best_day?.return_pct)} sub={risk.best_day?.date} />
                 <Stat label="Worst day" value={pct(risk.worst_day?.return_pct)} sub={risk.worst_day?.date} />
                 <Stat label="Avg daily volume" value={usd(risk.avg_daily_volume, { compact: true })} sub={risk.volume_trend_ratio ? `7d vs 90d ratio ${risk.volume_trend_ratio}×` : undefined} />

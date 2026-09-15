@@ -89,7 +89,8 @@ Claude, which bills one. Two ways to provide it:
 ## Friendly by design
 
 - **Tap any jargon.** Dotted-underlined terms such as BTC dominance, Fear & Greed, liquidations and market beta open a one-line plain explanation.
-- **Explain, instantly.** Tiles, gauges, the market chart, movers and liquidations carry an Explain button. It opens a stored explainer, with no AI call and no wait: what the number is, what today's value means with a scale where one applies, how to read it and what moves it. The analyst is kept for analysis.
+- **Explain, instantly.** Home tiles, gauges, the market chart, movers, liquidations, coin risk stats and portfolio cards carry an Explain button. It opens a stored explainer, with no AI call and no wait: what today's value means, how it compares with a week ago, when it was read, a scale where one applies, how to read it and what moves it. Dominance and liquidations add a separate link to the analyst for the "why today" question.
+- **Learn.** Every explainer on one page at `/learn`, linked from each popup and the search palette.
 - **Scan now on your own key.** Scheduled scans run every four hours on the site's key. A visitor can scan on demand with their own key, which stays in their browser and is never stored in a database.
 - **Paste your portfolio.** Type "0.5 BTC, 10 SOL" instead of filling amounts row by row. Matches are previewed before they are added.
 - **Calm mode.** Stops the carousels from sliding on their own, and follows the device's reduce-motion setting by default.

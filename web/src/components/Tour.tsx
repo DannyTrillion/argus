@@ -11,7 +11,7 @@ import clsx from "clsx";
 import { Mascot } from "./ui/Mascot";
 
 // Bumped when the tour changes, so returning visitors see the new stops once.
-const KEY = "argus.tour.v2";
+const KEY = "argus.tour.v3";
 
 interface Step {
   /** data-tour anchors to try in order; the first one visible wins (desktop vs mobile variants). */
@@ -32,6 +32,12 @@ const STEPS: Step[] = [
     target: ["pulse"],
     title: "The market pulse",
     body: "Total cap, volume and BTC dominance with 30-day sparklines, plus Fear & Greed and the Altcoin Season Index. Refreshes every minute.",
+    route: "/",
+  },
+  {
+    target: ["explain"],
+    title: "Tap Explain on any number",
+    body: "Every tile and chart has an Explain button. It opens straight away: what the number means today, how it compares with last week, how to read it and what moves it. The Learn page keeps them all in one place.",
     route: "/",
   },
   {

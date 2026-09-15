@@ -12,7 +12,7 @@ const RANGES = [30, 90, 365] as const;
 
 export function HeroChart() {
   const [days, setDays] = useState<(typeof RANGES)[number]>(90);
-  const { data, isLoading } = useQuery({ queryKey: ["history", days], queryFn: () => api.history(days) });
+  const { data, isLoading, dataUpdatedAt } = useQuery({ queryKey: ["history", days], queryFn: () => api.history(days) });
 
   const option = useMemo(() => {
     if (!data) return null;
@@ -63,7 +63,7 @@ export function HeroChart() {
   // Live reading for the explainer, from the same series the chart draws.
   const pts = data?.global ?? [];
   const chartLive = pts.length > 1
-    ? { extra: { days, capChangePct: (pts[pts.length - 1].total_market_cap / pts[0].total_market_cap - 1) * 100, domChangePts: pts[pts.length - 1].btc_dominance - pts[0].btc_dominance } }
+    ? { asOf: dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : null, extra: { days, capChangePct: (pts[pts.length - 1].total_market_cap / pts[0].total_market_cap - 1) * 100, domChangePts: pts[pts.length - 1].btc_dominance - pts[0].btc_dominance } }
     : undefined;
 
   return (

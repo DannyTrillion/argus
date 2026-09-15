@@ -113,43 +113,44 @@ article.
 
 ## Video script (2 minutes, your voice)
 
-Record at 1440x900 or a phone plus desktop split. Keep the cursor slow. Say the endpoint
-names out loud where marked; judges listen for them.
+Record the live site at 1440x900, or a phone and desktop split. Keep the cursor slow. Say the
+endpoint names where marked; judges listen for them.
 
-**0:00–0:15 Hook.** Home screen, coverflow moving.
-"This is Argus. It's a crypto market terminal, but the part that matters is that it watches
+**Before you record:** add your own Anthropic key on `/keys` in the recording browser, press
+Scan now about an hour earlier so the cards are fresh, and close the welcome tour.
+
+**0:00-0:15 Hook.** Home, the "Argus noticed" cards sliding.
+"This is Argus. It is a crypto market terminal, but the part that matters is that it watches
 CoinMarketCap on its own. Every four hours it scans the top two hundred with hourly
 quotes-historical, flags moves that are unusual for that coin, and investigates them."
 
-**0:15–0:40 Argus noticed.** Click Read more on a card, scroll the article, tap Ask Argus.
-"Each finding gets a headline, a deck and a short article written by the agent from real
-calls: quotes, categories, liquidations, news. Ask Argus opens the analyst with the finding
-as context."
+**0:15-0:35 A finding.** Click Read more on a card, scroll the article, tap Ask Argus.
+"Each finding is a headline and a short article the agent wrote from real calls: quotes,
+categories, liquidations, news. Ask Argus takes it straight into the analyst."
 
-**0:40–1:10 Analyst.** Ask "why is SOL moving today". Show tool steps, attribution bar,
-evidence panel expanded.
-"The analyst is a Claude agent with eighteen tools over the API. Here it calls explain-move,
-which splits the move into market beta, sector excess and what's left that's coin-specific,
-using quotes-latest, quotes-historical, categories and the liquidations endpoints. Every call
-is listed here with its credit cost. These are the follow-ups it suggests."
+**0:35-1:00 The analyst.** Ask "why is SOL moving today". Show the tool steps, the attribution
+bar and the evidence panel.
+"The analyst is a Claude agent with eighteen tools over the API. Here it runs explain-move,
+splitting the move into market beta, sector and what is specific to SOL, using quotes-latest,
+quotes-historical, categories and the liquidations endpoints. Every call is listed with its
+credit cost."
 
-**1:10–1:25 Portfolio.** Watchlist screen, Portfolio tab, type an amount or two.
-"Put in what you hold and the same engine runs on your basket: what moved your value, how much
-of it was just Bitcoin, and how concentrated you are. It never leaves the browser."
+**1:00-1:20 Explain.** Back home. Tap Explain on Fear & Greed, then on BTC dominance.
+"Not every question needs an AI. Tap Explain on any number and you get a plain reading
+instantly: what it means today, how it compares with last week, and how to read it. Dominance
+and liquidations add a separate link when the real question is why it moved."
 
-**1:25–1:40 Brief and explainer.** Back home. Show the brief deck sliding, then the Move
-explainer tab with a chip or two.
-"Every four hours it writes a brief without anyone typing a prompt. And the move explainer
-does the attribution for any coin in one tap."
+**1:20-1:40 Portfolio.** Watchlist, Portfolio, Paste a list: "0.5 BTC, 10 SOL", Add.
+"Paste what you hold and the same engine runs on your basket: what moved your value, how much
+was just Bitcoin, and how concentrated you are. Amounts stay in the browser."
 
-**1:40–1:50 Depth.** Coin page risk profile, watchlist correlation heatmap, quick pass over
-Explore.
-"Underneath is a full terminal: risk profiles computed from ninety days of history, a
-correlation heatmap for your watchlist, and a screener over two hundred coins."
+**1:40-1:52 On demand.** Press Scan now.
+"The schedule runs on its own. Scan now runs one immediately on your own key, which stays in
+your browser and is never stored."
 
-**1:50–2:00 Close.** Status page.
-"Plan usage, endpoint probes, and a pause switch for the automation. Built for Build with CMC.
-Repo and live link are in the submission."
+**1:52-2:00 Close.** Status page.
+"Plan usage, endpoint probes and owner-only controls. Built for Build with CMC. Repo and live
+link are in the submission."
 
 ## X post draft
 

@@ -14,6 +14,8 @@ import { Card, CardTitle } from "../ui/Card";
 import { Change } from "../ui/Change";
 import { Skeleton } from "../ui/Skeleton";
 import { Mascot } from "../ui/Mascot";
+import { ExplainButton } from "../ui/Explain";
+import type { ExplainTopic, Live } from "../../lib/explainers";
 
 const SECTOR_COLORS = ["#e7c46a", "#8fb7ff", "#c99cff", "#6fd39c", "#ef9f6f", "#7fd7e8", "#d78fb7"];
 
@@ -22,10 +24,13 @@ function signedUsd(n: number): string {
   return `${n < 0 ? "−" : "+"}${usd(Math.abs(n))}`;
 }
 
-function Tile({ label, value, sub, tone }: { label: string; value: string; sub?: React.ReactNode; tone?: "up" | "down" }) {
+function Tile({ label, value, sub, tone, explain }: { label: string; value: string; sub?: React.ReactNode; tone?: "up" | "down"; explain?: React.ReactNode }) {
   return (
     <div className="glass-2 rounded-2xl p-3.5">
-      <div className="text-[11px] text-ink-3">{label}</div>
+      <div className="flex items-center justify-between gap-1">
+        <div className="text-[11px] text-ink-3">{label}</div>
+        {explain}
+      </div>
       <div className={clsx("font-display mt-1 text-[22px] font-light leading-none", tone === "up" && "text-up", tone === "down" && "text-down")}>{value}</div>
       {sub !== undefined && <div className="mt-1.5 text-[11.5px] text-ink-3">{sub}</div>}
     </div>
@@ -72,14 +77,17 @@ function ValueChart({ p }: { p: Portfolio }) {
       <div ref={ref} className="h-[280px] w-full" />
       {p.risk && (
         <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {[
-            ["Return", `${p.risk.return_pct > 0 ? "+" : ""}${p.risk.return_pct}%`],
-            ["Volatility", `${p.risk.annualized_volatility_pct}%`],
-            ["Max drawdown", `${p.risk.max_drawdown_pct}%`],
-            ["Correlation to BTC", p.risk.correlation_to_btc === null ? "—" : String(p.risk.correlation_to_btc)],
-          ].map(([k, v]) => (
+          {([
+            { k: "Return", v: `${p.risk.return_pct > 0 ? "+" : ""}${p.risk.return_pct}%` },
+            { k: "Volatility", v: `${p.risk.annualized_volatility_pct}%`, topic: "volatility", live: { value: p.risk.annualized_volatility_pct, asOf: p.computed_at } },
+            { k: "Max drawdown", v: `${p.risk.max_drawdown_pct}%`, topic: "drawdown", live: { value: p.risk.max_drawdown_pct, asOf: p.computed_at } },
+            { k: "Correlation to BTC", v: p.risk.correlation_to_btc === null ? "—" : String(p.risk.correlation_to_btc), topic: "correlation", live: { value: p.risk.correlation_to_btc, asOf: p.computed_at } },
+          ] as Array<{ k: string; v: string; topic?: ExplainTopic; live?: Live }>).map(({ k, v, topic, live }) => (
             <div key={k} className="glass-2 rounded-xl p-2.5 text-center">
-              <div className="text-[10.5px] text-ink-3">{k}</div>
+              <div className="flex items-center justify-center gap-0.5 text-[10.5px] text-ink-3">
+                {k}
+                {topic && <ExplainButton topic={topic} live={live} iconOnly className="-my-1 px-1" />}
+              </div>
               <div className="mt-0.5 font-mono text-[13px]">{v}</div>
             </div>
           ))}
@@ -100,7 +108,7 @@ function AttributionCard({ p }: { p: Portfolio }) {
   const scale = Math.max(0.5, ...parts.map((x) => Math.abs(x.value)), Math.abs(a.total_pct));
   return (
     <Card>
-      <CardTitle right={<span className="pill bg-gold-dim px-2 py-0.5 font-mono text-[10.5px] text-gold">{a.read}</span>}>Why your portfolio moved</CardTitle>
+      <CardTitle right={<div className="flex items-center gap-1.5"><span className="pill bg-gold-dim px-2 py-0.5 font-mono text-[10.5px] text-gold">{a.read}</span><ExplainButton topic="portfolio-attribution" live={{ asOf: p.computed_at, extra: { market: a.market_component_pct, sector: a.sector_excess_pct, own: a.coin_specific_pct, beta: a.beta_to_btc } }} iconOnly /></div>}>Why your portfolio moved</CardTitle>
       <div className="space-y-2.5">
         {parts.map((x) => (
           <div key={x.label}>
@@ -132,7 +140,7 @@ function ExposureCard({ p }: { p: Portfolio }) {
   const heavy = c.top1_pct >= 50 || c.effective_positions < 2;
   return (
     <Card>
-      <CardTitle right={<span className="font-mono text-[11px] text-ink-3">{p.positions.length} positions</span>}>Concentration and sectors</CardTitle>
+      <CardTitle right={<div className="flex items-center gap-1.5"><span className="font-mono text-[11px] text-ink-3">{p.positions.length} positions</span><ExplainButton topic="concentration" live={{ value: c.top1_pct, asOf: p.computed_at, extra: { effective: c.effective_positions } }} iconOnly /></div>}>Concentration and sectors</CardTitle>
       <div className="grid grid-cols-3 gap-2">
         {[
           ["Largest", `${c.top1_pct}%`],
@@ -285,6 +293,7 @@ export function PortfolioView({ coins, watchIds }: { coins: CoinRow[]; watchIds:
         />
         <Tile label="7 days" value={data.change_7d_pct === null ? "—" : pct(data.change_7d_pct, 2)} sub={data.change_7d_usd === null ? undefined : signedUsd(data.change_7d_usd)} />
         <Tile
+          explain={<ExplainButton topic="vs-btc" live={{ value: data.vs_btc_pct, asOf: data.computed_at }} iconOnly className="-my-1 -mr-1.5" />}
           label="vs holding Bitcoin"
           value={data.vs_btc_pct === null ? "—" : pct(data.vs_btc_pct, 2)}
           sub={data.vs_btc_pct === null ? undefined : data.vs_btc_pct >= 0 ? "you did better" : "you did worse"}
