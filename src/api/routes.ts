@@ -8,6 +8,7 @@ import { config } from "../config.js";
 import { BRIEF_REFRESH_MINUTES, currentBrief, getBrief, refreshBrief } from "../services/brief.js";
 import { usageSummary } from "../services/usage.js";
 import { LIMITS, sharedQuestionsToday } from "../services/limits.js";
+import { budgetFrozen, budgetSummary } from "../services/budget.js";
 import { status } from "../services/status.js";
 import { explainMove, type Window } from "../services/explain.js";
 import { findings, scan } from "../services/watch.js";
@@ -91,6 +92,7 @@ api.post("/watch/scan", async (c) => {
   // the visitor's own key, sent per request and never stored, so the shared key stays capped.
   const own = resolveAnthropicKey(c.req.header(KEY_HEADER));
   if (!own) return c.json({ error: "own_key_required", message: "Scan now runs on your own Anthropic key. Add it on the Keys page. It stays in your browser and is never stored in a database." }, 401);
+  if (budgetFrozen()) return c.json({ error: "cmc_budget", message: "Today's CoinMarketCap budget is used up, so scans resume tomorrow. The cards show the latest findings." }, 429);
   const fresh = await scan(own);
   return c.json({ fresh, ...findings() });
 });
@@ -115,6 +117,7 @@ api.get("/usage", (c) => {
     ...usageSummary(),
     schedule: { briefMinutes: BRIEF_REFRESH_MINUTES, scanMinutes: f.intervalMinutes, investigationsPerDay: f.dailyCap, investigationsToday: f.investigationsToday },
     sharedAnalyst: { perHour: LIMITS.perHour, perDay: LIMITS.perDay, usedToday: sharedQuestionsToday() },
+    cmcBudget: budgetSummary(),
   });
 });
 api.post("/keys/test", async (c) => {

@@ -14,6 +14,8 @@ import { config } from "../config.js";
 import { automationPaused } from "./settings.js";
 import { recordUsage } from "./usage.js";
 import { BRIEF_REFRESH_MINUTES } from "./brief.js";
+import { budgetAllows } from "./budget.js";
+import { plan } from "../cmc/plan.js";
 
 export type SignalKind = "coin_move" | "volume_spike" | "liquidation_burst" | "dominance_break" | "sector_divergence" | "sentiment_shift";
 
@@ -289,7 +291,9 @@ export function scan(apiKey?: string | null): Promise<Finding[]> {
         return !last || now - Date.parse(last) > COOLDOWN_MS;
       });
       // The daily cap bounds the deployment's key. A visitor's own key pays for its own scan.
-      const budget = apiKey ? MAX_PER_SCAN : Math.max(0, Math.min(MAX_PER_SCAN, MAX_PER_DAY - state.investigationsToday.count));
+      // Lean plans investigate at most one signal per scan to protect CoinMarketCap credits.
+      const perScan = plan.lean ? 1 : MAX_PER_SCAN;
+      const budget = apiKey ? perScan : Math.max(0, Math.min(perScan, MAX_PER_DAY - state.investigationsToday.count));
       for (const s of eligible.slice(0, budget)) {
         state.cooldowns[s.fingerprint] = new Date().toISOString();
         if (!apiKey) state.investigationsToday.count += 1;
@@ -345,7 +349,7 @@ export function startWatch(): void {
   if (config.keyless) return;
   // Backfill headlines for older findings, then scan shortly after boot, then on the interval.
   if (!automationPaused()) void ensureHeadlines().then((n) => { if (n) console.log(`[watch] backfilled ${n} headline(s)`); });
-  setTimeout(() => { if (!automationPaused()) void scan(); }, 20_000).unref();
-  timer = setInterval(() => { if (!automationPaused()) void scan(); }, INTERVAL_MS);
+  setTimeout(() => { if (!automationPaused() && budgetAllows("scan")) void scan(); }, 20_000).unref();
+  timer = setInterval(() => { if (!automationPaused() && budgetAllows("scan")) void scan(); }, INTERVAL_MS);
   timer.unref();
 }

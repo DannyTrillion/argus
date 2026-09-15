@@ -83,6 +83,7 @@ export interface UsageReport {
   days: Array<{ date: string; usd: number; runs: number }>;
   schedule: { briefMinutes: number; scanMinutes: number; investigationsPerDay: number; investigationsToday: number };
   sharedAnalyst: { perHour: number; perDay: number; usedToday: number };
+  cmcBudget: { lean: boolean; simulateBasic: boolean; frozen: boolean; limitMonthly: number | null; rateLimitMinute: number | null; usedToday: number; budgetToday: number | null; until: string | null; checkedAt: string | null };
 }
 export interface KeyStatus { serverKey: boolean; serverKeyHealthy: boolean | null; serverKeyCheckedAt: string | null; cmcKey: boolean; analystModel: string; automationModel: string }
 export interface PortfolioPosition {

@@ -128,6 +128,89 @@ Every call is logged with endpoint, query, status, credit cost and a response pr
 ([src/cmc/http.ts](src/cmc/http.ts)). The Analyst screen shows that log per answer, and
 `GET /api/calls` returns the last 100.
 
+## Evidence of real API calls
+
+**The code that makes every call** ([src/cmc/http.ts](src/cmc/http.ts)). One function sends the key header, normalises CoinMarketCap's error envelope, and records each call with its credit cost:
+
+```ts
+const url = new URL(config.cmcBaseUrl.replace(/\/$/, "") + path);
+for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+
+const headers: Record<string, string> = { Accept: "application/json", "Accept-Encoding": "deflate, gzip" };
+if (!config.keyless) headers["X-CMC_PRO_API_KEY"] = config.cmcApiKey;
+const res = await fetch(url, { headers });
+const body = (await res.json()) as CmcEnvelope<T>;
+
+// v1/v2 return error_code as a number, v3 as the string "0". Normalise before checking.
+const errorCode = Number(body?.status?.error_code ?? (res.ok ? 0 : res.status));
+if (!res.ok || errorCode !== 0) throw new CmcApiError(res.status, errorCode, body?.status?.error_message ?? res.statusText, path);
+
+record({ endpoint: path, query: params, httpStatus: res.status, creditCount: body.status.credit_count, elapsedMs, cached: false, preview: preview(body.data) });
+```
+
+**A real response**, captured on 2026-09-15 from `GET /v3/cryptocurrency/quotes/latest?id=1&convert=USD` and trimmed to the fields Argus reads ([docs/evidence/quotes-latest-btc.json](docs/evidence/quotes-latest-btc.json)). Note `error_code` arriving as the string `"0"`:
+
+```json
+{
+  "status": {
+    "timestamp": "2026-09-15T17:54:32.765Z",
+    "error_code": "0",
+    "error_message": "",
+    "elapsed": 4,
+    "credit_count": 1
+  },
+  "data": [
+    {
+      "id": 1,
+      "name": "Bitcoin",
+      "symbol": "BTC",
+      "cmc_rank": 1,
+      "quote": [
+        {
+          "symbol": "USD",
+          "price": 76993.18239851118,
+          "volume_24h": 32996313380.687634,
+          "percent_change_24h": -2.47644884,
+          "market_cap": 1546395749564.9133,
+          "market_cap_dominance": 59.016,
+          "last_updated": "2026-09-15T17:53:04.000Z"
+        }
+      ]
+    }
+  ]
+}
+```
+
+**The same call as Argus records it**, from the live call log at `GET /api/calls` (response preview shortened):
+
+```json
+{
+  "endpoint": "/v3/cryptocurrency/quotes/latest",
+  "query": { "id": "1", "convert": "USD", "skip_invalid": "true" },
+  "httpStatus": 200,
+  "creditCount": 1,
+  "elapsedMs": 250,
+  "cached": false,
+  "at": "2026-09-15T17:40:01.066Z",
+  "preview": "[{\"tags\":[{\"slug\":\"mineable\",\"name\":\"Mineable\" ..."
+}
+```
+
+**On screen.** Every analyst answer lists the calls it made in its evidence panel, with credits and cache hits:
+
+![The Argus analyst answering "Why is SOL moving today?" with the evidence panel listing CoinMarketCap endpoints, 12 calls and 8 credits](docs/evidence/analyst-evidence.jpg)
+
+## CoinMarketCap budget and judging mode
+
+Event access reverts to the free Basic plan (15,000 credits a month, 50 calls a minute, no liquidations) when submissions close, and judging runs after that. Argus reads its plan from `GET /v1/key/info`, which costs no credits, every ten minutes. On a Basic-sized plan it switches to judging mode by itself ([src/services/budget.ts](src/services/budget.ts)):
+
+- Daily budget = credits left this month spread over the days until `BUDGET_UNTIL` (set to the end of judging). Basic from 1 October to 19 October is 833 credits a day.
+- Every cache lasts ten times longer, calls stay under 80% of the rate limit, and each scan investigates one signal at most.
+- Scheduled scans pause at 60% of the day's budget and briefs at 80%. Once the budget is spent, pages keep serving the last data fetched and Scan now waits until tomorrow.
+- Liquidation cards and liquidation findings fall back gracefully when the plan does not include them.
+
+Rehearse it on any key with `CMC_SIMULATE_BASIC=1`. Status shows the budget, what was used today and whether judging mode is on.
+
 ## Architecture
 
 ```

@@ -9,6 +9,7 @@ import type { BetaMessageParam } from "@anthropic-ai/sdk/resources/beta/messages
 import { runAgent } from "../agent/agent.js";
 import { config } from "../config.js";
 import { automationPaused } from "./settings.js";
+import { budgetAllows } from "./budget.js";
 
 export interface Brief {
   text: string;
@@ -108,9 +109,9 @@ export function startBriefSchedule(): void {
   }
   // Warm on boot when there is no brief or only a stale one, then refresh on an interval.
   // Both respect the pause switch; a manual refresh from the API still works.
-  if ((!current || isStale(current)) && !automationPaused()) refreshBrief().catch((err) => console.error("[brief] initial generation failed:", err instanceof Error ? err.message : err));
+  if ((!current || isStale(current)) && !automationPaused() && budgetAllows("brief")) refreshBrief().catch((err) => console.error("[brief] initial generation failed:", err instanceof Error ? err.message : err));
   timer = setInterval(() => {
-    if (automationPaused()) return;
+    if (automationPaused() || !budgetAllows("brief")) return;
     refreshBrief().catch((err) => console.error("[brief] refresh failed:", err instanceof Error ? err.message : err));
   }, REFRESH_MS);
   timer.unref();

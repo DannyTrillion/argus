@@ -22,6 +22,7 @@ import { startBriefSchedule } from "./services/brief.js";
 import { startWatch } from "./services/watch.js";
 import { KEY_HEADER, canRunModel, resolveAnthropicKey, startKeyHealth } from "./services/keys.js";
 import { takeSharedQuestion } from "./services/limits.js";
+import { startBudget } from "./services/budget.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const webDist = join(here, "..", "web", "dist");
@@ -115,4 +116,5 @@ serve({ fetch: app.fetch, port: config.port }, (info) => {
   startBriefSchedule();
   startWatch();
   startKeyHealth();
+  startBudget();
 });

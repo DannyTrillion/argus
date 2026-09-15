@@ -10,6 +10,7 @@
  */
 import { AsyncLocalStorage } from "node:async_hooks";
 import { config } from "../config.js";
+import { BASIC_EXCLUDED, plan } from "./plan.js";
 
 /** Tags every CMC call made inside an agent run so listeners can filter to their own run. */
 export const callContext = new AsyncLocalStorage<{ runId: string }>();
@@ -130,6 +131,13 @@ export async function cmcGet<T>(path: string, query: Query = {}): Promise<CmcEnv
     return hit.body as CmcEnvelope<T>;
   }
 
+  if (plan.simulateBasic && BASIC_EXCLUDED.some((r) => r.test(path))) {
+    const message = "Your plan doesn't support this endpoint (simulated Basic plan).";
+    record({ endpoint: path, query: params, httpStatus: 403, creditCount: 0, elapsedMs: 0, cached: false, preview: message });
+    throw new CmcApiError(403, 1006, message, path);
+  }
+  await waitForSlot();
+
   const started = performance.now();
   const headers: Record<string, string> = { Accept: "application/json", "Accept-Encoding": "deflate, gzip" };
   if (!config.keyless) headers["X-CMC_PRO_API_KEY"] = config.cmcApiKey;
@@ -160,7 +168,7 @@ export async function cmcGet<T>(path: string, query: Query = {}): Promise<CmcEnv
     throw new CmcApiError(res.status, code, message, path);
   }
 
-  cache.set(cacheKey, { expires: Date.now() + config.cacheTtlSeconds * 1000, body });
+  cache.set(cacheKey, { expires: Date.now() + config.cacheTtlSeconds * 1000 * plan.ttlScale, body });
   record({
     endpoint: path,
     query: params,
@@ -171,6 +179,19 @@ export async function cmcGet<T>(path: string, query: Query = {}): Promise<CmcEnv
     preview: preview(body.data),
   });
   return body;
+}
+
+/** On a lean plan, stay under 80% of the per-minute rate limit by spacing calls out. */
+const recentStarts: number[] = [];
+async function waitForSlot(): Promise<void> {
+  if (!plan.lean || !plan.rateLimitMinute) return;
+  const limit = Math.max(1, Math.floor(plan.rateLimitMinute * 0.8));
+  for (;;) {
+    const now = Date.now();
+    while (recentStarts.length && now - recentStarts[0] > 60_000) recentStarts.shift();
+    if (recentStarts.length < limit) { recentStarts.push(now); return; }
+    await new Promise((r) => setTimeout(r, 60_000 - (now - recentStarts[0]) + 50));
+  }
 }
 
 /** Clear the response cache. Useful in tests and when forcing fresh data. */

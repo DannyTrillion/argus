@@ -119,6 +119,34 @@ function SpendCard() {
   );
 }
 
+function BudgetCard() {
+  const { data } = useQuery({ queryKey: ["usage"], queryFn: api.usage, refetchInterval: 60_000 });
+  const b = data?.cmcBudget;
+  const pct = b?.budgetToday ? Math.min(100, (b.usedToday / b.budgetToday) * 100) : 0;
+  return (
+    <Card>
+      <CardTitle right={b ? <span className={clsx("pill px-2 py-0.5 font-mono text-[10.5px]", b.frozen ? "bg-down-dim text-down" : b.lean ? "bg-gold-dim text-gold" : "glass-2 text-ink-3")}>{b.frozen ? "budget spent" : b.lean ? "judging mode" : "normal"}</span> : undefined}>CoinMarketCap budget</CardTitle>
+      {!b ? (
+        <Skeleton className="h-[110px]" />
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-2.5">
+            <Stat label="Used today" value={b.budgetToday ? `${b.usedToday.toLocaleString()} / ${b.budgetToday.toLocaleString()}` : b.usedToday.toLocaleString()} sub="credits against today's budget" />
+            <Stat label="Plan" value={b.limitMonthly ? `${compact(b.limitMonthly)} / month` : "—"} sub={b.rateLimitMinute ? `${b.rateLimitMinute} calls a minute` : undefined} />
+          </div>
+          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-surface-2"><div className={clsx("h-full rounded-full", b.frozen ? "bg-down" : "bg-gold")} style={{ width: `${pct}%` }} /></div>
+          <p className="mt-3 text-[12px] leading-relaxed text-ink-3">
+            {b.lean
+              ? `Basic-sized plan${b.simulateBasic ? " (simulated)" : ""}: caches last ten times longer, scheduled scans pause at 60% of today's budget, and once it is spent the site keeps showing the last data it fetched.`
+              : "Startup plan: normal caching. Judging mode switches on by itself if the key drops to a Basic-sized plan, as it will when submissions close."}
+            {b.until ? ` Budget spread until ${b.until.slice(0, 10)}.` : ""}
+          </p>
+        </>
+      )}
+    </Card>
+  );
+}
+
 function PreferencesCard() {
   const calm = useCalm();
   const chosen = getCalmSetting();
@@ -163,6 +191,7 @@ export default function Status() {
             <AutomationCard />
             <PreferencesCard />
             <SpendCard />
+            <BudgetCard />
             <Card>
               <CardTitle>CoinMarketCap plan</CardTitle>
               <div className="grid grid-cols-2 gap-2.5">

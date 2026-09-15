@@ -114,7 +114,7 @@ export function coins(limit: number) {
   const n = Math.min(500, Math.max(10, limit));
   return memo(`coins:${n}`, MINUTE, async () => {
     const list = await cmc.listings({ limit: n });
-    const sparks = await memo(`sparks:${n}`, 60 * MINUTE, () => cmc.sparklines(list.map((c) => c.id), 8));
+    const sparks = await memo(`sparks:${n}`, 6 * 60 * MINUTE, () => cmc.sparklines(list.map((c) => c.id), 8));
     const rows: CoinRow[] = list.map((c) => ({ ...c, sparkline: sparks.get(c.id) ?? [] }));
     return { coins: rows, updatedAt: new Date().toISOString() };
   });

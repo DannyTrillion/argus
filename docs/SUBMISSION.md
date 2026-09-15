@@ -12,7 +12,9 @@ Deadline: **30 Sep 2026, 23:59 UTC**. Track: **AI Agents and Automation**.
 - [ ] In the browser you record with, open `/keys` and add your own Anthropic key: "Scan now" only runs on a visitor's own key
 - [ ] If automation is paused, open `/status` and unlock the switch with `ARGUS_ADMIN_TOKEN` from your local `.env`
 - [ ] An hour before recording, press "Scan now" so the coverflow has fresh findings
+- [ ] Record the video before 30 September, while the Startup plan is active: after submissions close the key reverts to Basic and liquidations stop working
 - [ ] Record the 2-minute video in your own voice (script below), upload unlisted to YouTube
+- [ ] Nothing to switch for judging: the live site detects the Basic plan from 1 October and turns on judging mode by itself (see README, "CoinMarketCap budget and judging mode")
 - [ ] Post on X with `#BuildwithCMC`, linking the BUIDL page (draft below), paste the post URL into the BUIDL
 - [ ] Submit the BUIDL: title, tagline, description, repo, video, live URL, X post, API feedback
 
