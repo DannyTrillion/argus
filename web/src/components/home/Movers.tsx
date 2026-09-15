@@ -4,8 +4,14 @@ import { api, type Coin } from "../../lib/api";
 import { usd } from "../../lib/format";
 import { Change } from "../ui/Change";
 import { Card, CardTitle } from "../ui/Card";
-import { AskButton } from "../ui/AskButton";
+import { ExplainButton } from "../ui/Explain";
 import { Skeleton } from "../ui/Skeleton";
+
+function moverLabel(c: Coin | undefined): string | null {
+  if (!c) return null;
+  const ch = c.quote.percent_change_24h ?? 0;
+  return `${c.symbol} ${ch >= 0 ? "+" : ""}${ch.toFixed(1)}%`;
+}
 
 function List({ title, coins }: { title: string; coins: Coin[] }) {
   return (
@@ -34,7 +40,7 @@ export function Movers() {
   const { data, isLoading } = useQuery({ queryKey: ["movers"], queryFn: api.movers });
   return (
     <Card className="lg:col-span-2">
-      <CardTitle right={<div className="flex items-center gap-2"><span className="hidden text-[11px] text-ink-3 sm:inline">24h · cap ≥ $50M · vol ≥ $5M</span><AskButton q="What moved today and why?" /></div>}>Movers that matter</CardTitle>
+      <CardTitle right={<div className="flex items-center gap-2"><span className="hidden text-[11px] text-ink-3 sm:inline">24h · cap ≥ $50M · vol ≥ $5M</span><ExplainButton topic="movers" live={data ? { extra: { topGainer: moverLabel(data.gainers[0]), topLoser: moverLabel(data.losers[0]) } } : undefined} /></div>}>Movers that matter</CardTitle>
       {isLoading || !data ? (
         <Skeleton className="h-[280px]" />
       ) : (

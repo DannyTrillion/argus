@@ -1,8 +1,7 @@
 import type { Liquidations as L } from "../../lib/api";
 import { usd } from "../../lib/format";
 import { Card, CardTitle } from "../ui/Card";
-import { AskButton } from "../ui/AskButton";
-import { Term } from "../ui/Term";
+import { ExplainButton } from "../ui/Explain";
 
 function Row({ label, long, short }: { label: string; long: number; short: number }) {
   const total = long + short || 1;
@@ -28,7 +27,7 @@ function Row({ label, long, short }: { label: string; long: number; short: numbe
 export function LiquidationsCard({ data }: { data: L | null | undefined }) {
   return (
     <Card>
-      <CardTitle right={<div className="flex items-center gap-2"><span className="hidden text-[11px] text-ink-3 sm:inline">perps + futures, all exchanges</span><AskButton q="What got liquidated in the last 24h and what does it mean?" /></div>}><Term k="liquidations" /></CardTitle>
+      <CardTitle right={<div className="flex items-center gap-2"><span className="hidden text-[11px] text-ink-3 sm:inline">perps + futures, all exchanges</span><ExplainButton topic="liquidations" live={data ? { value: data.total_liquidations_24h, extra: { longSharePct: data.total_liquidations_24h ? (data.long_liquidations_24h / data.total_liquidations_24h) * 100 : null } } : undefined} /></div>}>Liquidations</CardTitle>
       {data ? (
         <div className="space-y-5">
           <Row label="Last 24h" long={data.long_liquidations_24h} short={data.short_liquidations_24h} />
