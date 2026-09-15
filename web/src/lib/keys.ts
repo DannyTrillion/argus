@@ -32,7 +32,7 @@ export function onKeyChange(fn: () => void): () => void {
   return () => { window.removeEventListener(EVENT, fn); window.removeEventListener("storage", fn); };
 }
 
-/** "sk-ant-api03-Hs…zvsLQ" style preview for the UI. */
+/** Short "sk-ant-api03-xxxx…xxxxx" style preview for the UI. */
 export function maskKey(k: string): string {
   if (k.length < 16) return "•".repeat(k.length);
   return `${k.slice(0, 14)}…${k.slice(-5)}`;

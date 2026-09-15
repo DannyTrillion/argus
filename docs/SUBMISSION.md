@@ -6,7 +6,7 @@ Deadline: **30 Sep 2026, 23:59 UTC**. Track: **AI Agents and Automation**.
 ## Checklist
 
 - [x] Register on DoraHacks with the same email as the CoinMarketCap API account
-- [ ] Rotate the CoinMarketCap and Anthropic keys, then confirm `git log -p | grep -c sk-ant` is 0
+- [ ] Rotate the CoinMarketCap and Anthropic keys, then run the pre-push check at the bottom of this file
 - [ ] Push the public repo `DannyTrillion/argus` (MIT, README, `.env.example`, no `.env`)
 - [x] Deployed on Railway: https://argus-production-d392.up.railway.app (project `argus`, service `argus`, volume at `/app/.cache`)
 - [ ] On the deployed app open `/status`, resume automation, run "Scan now" so the coverflow has fresh findings
@@ -176,6 +176,6 @@ Alternate shorter version if the clip carries it:
 
 ```bash
 git ls-files | grep -E '^\.env$|\.cache/' ; echo "(should print nothing)"
-git log -p --all | grep -cE 'sk-ant-|3a0b1027' ; echo "(should print 0)"
+git log -p --all | grep -cE 'sk-ant-api03-[A-Za-z0-9_-]{20,}|CMC_API_KEY=[0-9a-f]{32}|X-CMC_PRO_API_KEY: [0-9a-f]{32}' ; echo "(should print 0)"
 pnpm test && pnpm typecheck && (cd web && npx tsc -b)
 ```
