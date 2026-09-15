@@ -28,11 +28,17 @@ const CACHE_FILE = process.env.BRIEF_CACHE_FILE ?? ".cache/brief.json";
 function load(): Brief | null {
   try {
     const b = JSON.parse(readFileSync(CACHE_FILE, "utf8")) as Brief;
-    if (b && typeof b.text === "string" && Date.now() - Date.parse(b.generatedAt) < REFRESH_MS) return b;
+    // Keep a stale brief: showing yesterday's read beats a blank Home while a new one
+    // generates, or while automation is paused or the key is down. The schedule refreshes it.
+    if (b && typeof b.text === "string" && b.text.trim()) return b;
   } catch {
     /* no cache yet */
   }
   return null;
+}
+
+function isStale(b: Brief): boolean {
+  return !(Date.now() - Date.parse(b.generatedAt) < REFRESH_MS);
 }
 
 function save(b: Brief): void {
@@ -98,9 +104,9 @@ export function startBriefSchedule(): void {
     console.warn("[brief] ANTHROPIC_API_KEY not set; automated brief disabled");
     return;
   }
-  // Warm on boot unless a fresh cached brief was loaded, then refresh on an interval.
+  // Warm on boot when there is no brief or only a stale one, then refresh on an interval.
   // Both respect the pause switch; a manual refresh from the API still works.
-  if (!current && !automationPaused()) refreshBrief().catch((err) => console.error("[brief] initial generation failed:", err instanceof Error ? err.message : err));
+  if ((!current || isStale(current)) && !automationPaused()) refreshBrief().catch((err) => console.error("[brief] initial generation failed:", err instanceof Error ? err.message : err));
   timer = setInterval(() => {
     if (automationPaused()) return;
     refreshBrief().catch((err) => console.error("[brief] refresh failed:", err instanceof Error ? err.message : err));

@@ -56,11 +56,13 @@ const MAX_PER_SCAN = Number(process.env.WATCH_MAX_PER_SCAN ?? 2);
 const MAX_PER_DAY = Number(process.env.WATCH_MAX_PER_DAY ?? 6);
 const MAX_FINDINGS = 40;
 
+// Declared before load() runs at module init: load() uses it, and a TDZ error there
+// used to be swallowed as "no state", booting every restart with zero findings.
+const STABLE = /^(USDT|USDC|DAI|USDE|USD1|PYUSD|FDUSD|TUSD|USDS|USDG)$/i;
 let state: State = load();
 let timer: NodeJS.Timeout | null = null;
 let scanning: Promise<Finding[]> | null = null;
 
-const STABLE = /^(USDT|USDC|DAI|USDE|USD1|PYUSD|FDUSD|TUSD|USDS|USDG)$/i;
 
 function readState(path: string): State | null {
   try {
@@ -74,13 +76,16 @@ function load(): State {
   try {
     // Fall back to the last good copy if the main file is missing or half-written.
     const s = readState(FILE) ?? readState(FILE + ".bak");
-    if (!s) throw new Error("no state");
-    if (Array.isArray(s.findings)) {
+    if (s && Array.isArray(s.findings)) {
       // Stablecoin findings predate the exclusion rule; drop them on load.
-      const findings = s.findings.filter((f) => !(f.subject.type === "coin" && STABLE.test(f.subject.symbol))).slice(0, MAX_FINDINGS);
+      const findings = s.findings.filter((f) => !(f.subject?.type === "coin" && STABLE.test(f.subject.symbol))).slice(0, MAX_FINDINGS);
       return { ...s, findings };
     }
-  } catch { /* fresh */ }
+  } catch (err) {
+    // A missing file returns null above and lands on fresh state quietly. Anything that
+    // throws here is a bug and must be loud, or a restart silently wipes the findings.
+    console.error("[watch] could not load saved state, starting fresh:", err instanceof Error ? err.message : err);
+  }
   return { findings: [], cooldowns: {}, lastScanAt: null, nextScanAt: null, investigationsToday: { day: "", count: 0 }, lastFearGreed: null };
 }
 
