@@ -28,7 +28,18 @@ function NoticedFeed() {
   const [ownKey, setOwnKey] = useState(Boolean(getAnthropicKey()));
   useEffect(() => onKeyChange(() => setOwnKey(Boolean(getAnthropicKey()))), []);
   const [explain, setExplain] = useState(false);
-  const scanNow = useMutation({ mutationFn: api.scanNow, onSuccess: (d) => { qc.setQueryData(["findings"], d); void qc.invalidateQueries({ queryKey: ["stream"] }); } });
+  const [scanResult, setScanResult] = useState<string | null>(null);
+  const scanNow = useMutation({
+    mutationFn: api.scanNow,
+    onSuccess: (d) => {
+      qc.setQueryData(["findings"], d);
+      void qc.invalidateQueries({ queryKey: ["stream"] });
+      const n = d.fresh?.length ?? 0;
+      // Say what the scan did, so an unchanged carousel never looks like a broken button.
+      setScanResult(n > 0 ? `${n} new ${n === 1 ? "story" : "stories"} added to the cards below.` : "Scan finished: nothing unusual right now. New cards appear when Argus finds something.");
+      setTimeout(() => setScanResult(null), 9000);
+    },
+  });
   const busy = scanNow.isPending || Boolean(data?.scanning);
   return (
     <div>
@@ -38,7 +49,7 @@ function NoticedFeed() {
           <span className="hidden sm:inline">Scans 200 coins, sectors, liquidations, dominance and sentiment every {every(data?.intervalMinutes)}</span>
           <span className="sm:hidden">Scans every {every(data?.intervalMinutes)}</span>
           {data?.lastScanAt ? ` · last ${timeAgo(data.lastScanAt)}` : ""}
-          <span className="hidden sm:inline"> · brief every 4h</span>
+          <span className="hidden sm:inline"> · brief every {every(data?.briefIntervalMinutes ?? 720)}</span>
         </span>
         <button
           data-tour="scan"
@@ -81,6 +92,11 @@ function NoticedFeed() {
         {scanNow.isError && (
           <motion.div key="scan-error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mb-3 text-[12px] text-down">
             {(scanNow.error as Error).message}
+          </motion.div>
+        )}
+        {scanResult && (
+          <motion.div key="scan-result" role="status" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mb-3 text-[12px] text-ink-2">
+            {scanResult}
           </motion.div>
         )}
       </AnimatePresence>

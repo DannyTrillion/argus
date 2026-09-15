@@ -82,11 +82,14 @@ const KIND_LABEL: Record<string, string> = {
 
 /** Most cards the Home coverflow carries; older findings stay in /api/findings. */
 export const MAX_CARDS = 8;
+/** Findings older than this leave the carousel; brief cards fill the space instead. */
+export const MAX_AGE_HOURS = Number(process.env.STORY_MAX_AGE_HOURS ?? 48);
 
 export function stream(): { stories: Story[]; lastScanAt: string | null; intervalMinutes: number; scanning: boolean } {
   const f = findings();
   // Freshest first, capped: the coverflow is a glance, not an archive.
-  const fresh = [...f.findings].sort((a, b) => Date.parse(b.investigatedAt) - Date.parse(a.investigatedAt)).slice(0, MAX_CARDS);
+  const cutoff = Date.now() - MAX_AGE_HOURS * 3_600_000;
+  const fresh = f.findings.filter((x) => Date.parse(x.investigatedAt) >= cutoff).sort((a, b) => Date.parse(b.investigatedAt) - Date.parse(a.investigatedAt)).slice(0, MAX_CARDS);
   const fromFindings: Story[] = fresh.map((x) => ({
     id: x.id,
     type: "finding",

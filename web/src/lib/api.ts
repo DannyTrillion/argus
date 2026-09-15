@@ -76,6 +76,14 @@ export interface CompareResult { days: number; stats: Array<SeriesStats & { sour
 export interface MapEntry { id: number; name: string; symbol: string; slug: string; rank?: number }
 export interface Capability { name: string; endpoint: string; ok: boolean; note?: string }
 export interface Automation { automationPaused: boolean; analystModel: string; automationModel: string; adminLocked?: boolean }
+export interface UsageBucket { runs: number; input: number; output: number; cacheRead: number; cacheWrite: number; usd: number }
+export interface UsageReport {
+  today: { date: string; usd: number; runs: number; visitorRuns: number; kinds: Record<"analyst" | "brief" | "investigation" | "headline", UsageBucket> };
+  last7: { usd: number; runs: number };
+  days: Array<{ date: string; usd: number; runs: number }>;
+  schedule: { briefMinutes: number; scanMinutes: number; investigationsPerDay: number; investigationsToday: number };
+  sharedAnalyst: { perHour: number; perDay: number; usedToday: number };
+}
 export interface KeyStatus { serverKey: boolean; serverKeyHealthy: boolean | null; serverKeyCheckedAt: string | null; cmcKey: boolean; analystModel: string; automationModel: string }
 export interface PortfolioPosition {
   id: number; symbol: string; name: string; rank: number | null; amount: number; price: number;
@@ -125,7 +133,7 @@ export interface Finding {
   subject: { type: "coin"; id: number; symbol: string; name: string } | { type: "sector"; name: string } | { type: "market" };
   severity: 1 | 2 | 3; metric: number; observedAt: string; summary: string; question: string; attribution: Explanation | null; calls: number; credits: number; investigatedAt: string;
 }
-export interface Findings { findings: Finding[]; lastScanAt: string | null; nextScanAt: string | null; intervalMinutes: number; investigationsToday: number; dailyCap: number; scanning: boolean; paused?: boolean; model?: string }
+export interface Findings { findings: Finding[]; lastScanAt: string | null; nextScanAt: string | null; intervalMinutes: number; investigationsToday: number; dailyCap: number; scanning: boolean; paused?: boolean; model?: string; briefIntervalMinutes?: number }
 export interface Story {
   id: string; type: "finding" | "brief"; kicker: string; headline: string; deck: string; body: string;
   accent: "gold" | "up" | "down" | "blue";
@@ -200,9 +208,10 @@ export const api = {
   scanNow: async () => {
     const res = await fetch("/api/watch/scan", { method: "POST", headers: keyHeaders() });
     if (!res.ok) throw new ApiError(res.status, ((await res.json().catch(() => ({}))) as { message?: string }).message ?? res.statusText);
-    return (await res.json()) as Findings;
+    return (await res.json()) as Findings & { fresh?: Array<{ id: string }> };
   },
   keys: () => get<KeyStatus>("/keys"),
+  usage: () => get<UsageReport>("/usage"),
   portfolio: async (holdings: Array<{ id: number; amount: number }>) => {
     const res = await fetch("/api/portfolio", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ holdings }) });
     if (!res.ok) throw new ApiError(res.status, ((await res.json().catch(() => ({}))) as { error?: string }).error ?? res.statusText);

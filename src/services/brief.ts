@@ -1,6 +1,6 @@
 /**
  * Automated market brief. The agent writes a structured brief on a schedule
- * (default every 4 hours) and on first request, so the Home screen always has
+ * (default twice a day) and on first request, so the Home screen always has
  * a fresh read of the market without anyone typing a prompt.
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -22,7 +22,8 @@ export interface Brief {
 const PROMPT =
   "Write today's crypto market brief as five sections with these exact markdown headings: ## Market backdrop, ## Movers that matter, ## Sector rotation, ## Leverage and risk, ## Watch list. Directly under each heading put one bold line: a punchy headline of at most 8 words in financial-news style, wrapped in ** **. Then at most 45 words: two or three tight sentences, or for Watch list three bullets of one line each. Lead with the single most important number. No preamble, no closing line, no other headings. Every number must come from the tools.";
 
-const REFRESH_MS = Number(process.env.BRIEF_REFRESH_MINUTES ?? 240) * 60_000;
+export const BRIEF_REFRESH_MINUTES = Number(process.env.BRIEF_REFRESH_MINUTES ?? 720);
+const REFRESH_MS = BRIEF_REFRESH_MINUTES * 60_000;
 const CACHE_FILE = process.env.BRIEF_CACHE_FILE ?? ".cache/brief.json";
 
 function load(): Brief | null {
@@ -64,6 +65,7 @@ async function generate(): Promise<Brief> {
     messages,
     maxIterations: 10,
     model: config.automationModel,
+    usageKind: "brief",
     onEvent: (e) => {
       if (e.type === "api_call") {
         calls += 1;

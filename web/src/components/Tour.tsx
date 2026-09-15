@@ -55,7 +55,7 @@ const STEPS: Step[] = [
   {
     target: ["brief"],
     title: "A brief nobody had to ask for",
-    body: "Every four hours I write five cards: backdrop, movers, sector rotation, leverage and a watch list. Tap a card to ask about it.",
+    body: "Twice a day I write five cards: backdrop, movers, sector rotation, leverage and a watch list. Tap a card to ask about it.",
     route: "/",
   },
   {

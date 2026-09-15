@@ -93,6 +93,7 @@ export function useChat(initialId?: string | null) {
           signal: ctrl.signal,
         });
         if (res.status === 401) throw new Error(NO_KEY_MESSAGE);
+        if (res.status === 429) throw new Error(((await res.json().catch(() => ({}))) as { message?: string }).message ?? "The shared analyst has reached its limit. Add your own key on the Keys page to keep asking.");
         if (!res.ok || !res.body) throw new Error(`Request failed (${res.status})`);
         const reader = res.body.getReader();
         const dec = new TextDecoder();

@@ -9,6 +9,7 @@ import { onCall, callContext, type CallRecord } from "../cmc/http.js";
 import { SYSTEM_PROMPT } from "./prompt.js";
 import { createTools, type ToolEvent } from "./tools.js";
 import { recheckServerKey } from "../services/keys.js";
+import { recordUsage, type UsageKind } from "../services/usage.js";
 
 export type AgentEvent =
   | { type: "text"; delta: string }
@@ -27,6 +28,8 @@ export interface RunOptions {
   maxIterations?: number;
   /** Override the model, e.g. a cheaper one for scheduled work. */
   model?: string;
+  /** What this run is for, so the spend report can break it down. Defaults to "analyst". */
+  usageKind?: UsageKind;
   /** Caller-supplied Anthropic key for this run only. Omit to use the server's ANTHROPIC_API_KEY. */
   apiKey?: string | null;
   /** The asker's holdings, sent by their browser with the question. Never stored. */
@@ -64,10 +67,13 @@ async function runAgentInner(opts: RunOptions, runId: string): Promise<RunResult
     if (record.runId === runId) onEvent({ type: "api_call", record });
   });
 
+  // Tokens across every turn of the tool loop, not just the last message.
+  const total = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
+  const model = opts.model ?? config.model;
   try {
     const runner = getClient(opts.apiKey).beta.messages.toolRunner(
       {
-        model: opts.model ?? config.model,
+        model,
         max_tokens: 16000,
         thinking: { type: "adaptive", display: "summarized" },
         output_config: { effort: "high" },
@@ -88,6 +94,10 @@ async function runAgentInner(opts: RunOptions, runId: string): Promise<RunResult
       stream.on("text", (delta: string) => onEvent({ type: "text", delta }));
       stream.on("thinking", (delta: string) => onEvent({ type: "thinking", delta }));
       const message = await stream.finalMessage();
+      total.input += message.usage.input_tokens;
+      total.output += message.usage.output_tokens;
+      total.cacheRead += message.usage.cache_read_input_tokens ?? 0;
+      total.cacheWrite += message.usage.cache_creation_input_tokens ?? 0;
       for (const block of message.content) {
         if (block.type === "tool_use") onEvent({ type: "tool_call", id: block.id, name: block.name, input: block.input });
       }
@@ -108,15 +118,18 @@ async function runAgentInner(opts: RunOptions, runId: string): Promise<RunResult
       text: finalText,
       followups,
       usage: {
-        input_tokens: final.usage.input_tokens,
-        output_tokens: final.usage.output_tokens,
-        cache_read_input_tokens: final.usage.cache_read_input_tokens ?? null,
+        input_tokens: total.input,
+        output_tokens: total.output,
+        cache_read_input_tokens: total.cacheRead,
       },
     });
+    recordUsage(opts.usageKind ?? "analyst", model, total, !opts.apiKey);
     return { messages: [...runner.params.messages], text: finalText };
   } catch (err) {
     // A rejected server key: re-probe now so the UI banner appears within seconds, not 30 minutes.
     if (!opts.apiKey && err instanceof Anthropic.AuthenticationError) void recheckServerKey();
+    // Tokens spent before a failure are still billed.
+    if (total.input || total.output) recordUsage(opts.usageKind ?? "analyst", model, total, !opts.apiKey);
     const message = describeError(err);
     onEvent({ type: "error", message });
     throw err;

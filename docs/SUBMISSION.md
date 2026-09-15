@@ -54,7 +54,7 @@ listing each CoinMarketCap call with endpoint, parameters, credit cost and a res
 preview. The model proposes follow-up questions after each answer. Conversations can be
 shared as read-only links.
 
-Also: a scheduled market brief every four hours (backdrop, movers, rotation, leverage, watch
+Also: a scheduled market brief twice a day (backdrop, movers, rotation, leverage, watch
 list) shown as a card deck, a welcome tour with the Argus owl, Cmd+K palette, local price and
 Fear & Greed alerts, a `/status` page with plan usage, endpoint probes and a pause switch for
 the automation, plan-aware fallbacks for the Basic tier, and a keyless mode for the public API.

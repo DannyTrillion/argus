@@ -174,7 +174,7 @@ export function StoryCoverflow() {
       <div className="flex flex-col items-center gap-3 py-10 text-center">
         <Mascot size={88} />
         <div className="text-[14px]">Nothing to show yet.</div>
-        <div className="max-w-[460px] text-[12.5px] text-ink-3">Argus scans the market and writes a brief every four hours. Stories appear here as they land.</div>
+        <div className="max-w-[460px] text-[12.5px] text-ink-3">Argus scans the market every four hours and writes a brief twice a day. Stories appear here as they land.</div>
       </div>
     );
   }

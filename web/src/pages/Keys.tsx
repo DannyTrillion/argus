@@ -117,7 +117,7 @@ export default function Keys() {
             {[
               { icon: <ShieldCheck size={15} />, t: "Never in a database", d: "Saved only in this browser's local storage. Argus keeps no database of keys. Forget it here or clear site data to remove it." },
               { icon: <Sparkles size={15} />, t: "Used once, then gone", d: "Travels over HTTPS with each question or scan. The server uses it for that request only, never logs it and never writes it to disk." },
-              { icon: <Radar size={15} />, t: "Never in the schedule", d: "The 4h brief and the watch loop only ever use the deployment's own key, never yours." },
+              { icon: <Radar size={15} />, t: "Never in the schedule", d: "The scheduled brief and the watch loop only ever use this site's own key, never yours." },
             ].map((x) => (
               <div key={x.t} className="glass-2 rounded-2xl p-3.5">
                 <div className="flex items-center gap-2 text-gold">{x.icon}<span className="text-[12.5px] font-medium text-ink">{x.t}</span></div>
@@ -140,7 +140,7 @@ export default function Keys() {
               ))}
             </ul>
             <p className="mt-3 text-[12px] leading-relaxed text-ink-3">
-              Everything else, the dashboard, Explore, coin pages, watchlist, the brief and past findings, needs no key at all. A typical question costs a few cents.
+              Everything else, the dashboard, Explore, coin pages, watchlist, the brief and past findings, needs no key at all. Questions on the site's shared key are capped per visitor; your own key has no cap.
             </p>
           </Card>
 

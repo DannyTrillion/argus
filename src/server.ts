@@ -21,6 +21,7 @@ import { api } from "./api/routes.js";
 import { startBriefSchedule } from "./services/brief.js";
 import { startWatch } from "./services/watch.js";
 import { KEY_HEADER, canRunModel, resolveAnthropicKey, startKeyHealth } from "./services/keys.js";
+import { takeSharedQuestion } from "./services/limits.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const webDist = join(here, "..", "web", "dist");
@@ -47,6 +48,12 @@ app.post("/api/chat", async (c) => {
   const keyHeader = c.req.header(KEY_HEADER);
   if (!canRunModel(keyHeader)) return c.json({ error: "no_key", message: "No Anthropic key. Add yours on the Keys page to ask the analyst." }, 401);
   const apiKey = resolveAnthropicKey(keyHeader);
+  if (!apiKey) {
+    // Questions on the site's shared key are capped per visitor and per day; own keys are not.
+    const visitor = (c.req.header("x-forwarded-for") ?? "").split(",")[0].trim() || "local";
+    const gate = takeSharedQuestion(visitor);
+    if (!gate.ok) return c.json({ error: "shared_limit", message: gate.message }, 429);
+  }
 
   let history = sessions.get(sessionId);
   if (!history && Array.isArray(body.history) && body.history.length) {

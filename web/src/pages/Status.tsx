@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 import { getAnthropicKey } from "../lib/keys";
 import clsx from "clsx";
 import { api, ApiError, setAdminToken } from "../lib/api";
-import { timeAgo } from "../lib/format";
+import { timeAgo, compact } from "../lib/format";
 import { Card, CardTitle } from "../components/ui/Card";
 import { Skeleton } from "../components/ui/Skeleton";
 
@@ -41,7 +41,7 @@ function AutomationCard() {
         <Link to="/keys" className="text-gold hover:underline">Keys</Link>
       </div>
       <p className="mt-3 text-[12px] leading-relaxed text-ink-3">
-        Scheduled work bills this site's Anthropic key: the brief and the watch scan each run every 4 hours, with at most 6 investigations a day. Scan now only runs on a visitor's own key. Pause the schedule here when you are not using Argus; the Analyst keeps working on demand.
+        Scheduled work bills this site's Anthropic key; the AI spend card shows what it costs. Scan now only runs on a visitor's own key. Pause the schedule here when you are not using Argus; the Analyst keeps working on demand.
       </p>
       <button
         onClick={() => toggle.mutate(!paused)}
@@ -60,6 +60,60 @@ function AutomationCard() {
             <button onClick={() => { setAdminToken(token); toggle.mutate(!paused); }} disabled={!token.trim() || toggle.isPending} className="pill shrink-0 bg-gold px-3.5 py-1.5 text-[12px] font-medium text-bg hover:bg-gold-2 disabled:opacity-50">Unlock</button>
           </div>
         </div>
+      )}
+    </Card>
+  );
+}
+
+const KIND_LABEL: Record<string, string> = { analyst: "Analyst questions", brief: "Briefs", investigation: "Investigations", headline: "Headlines" };
+const money = (n: number) => `$${n > 0 && n < 0.01 ? n.toFixed(3) : n.toFixed(2)}`;
+const every = (min: number) => (min % 60 === 0 ? `${min / 60}h` : `${min} min`);
+
+function SpendCard() {
+  const { data } = useQuery({ queryKey: ["usage"], queryFn: api.usage, refetchInterval: 60_000 });
+  return (
+    <Card className="lg:col-span-2">
+      <CardTitle right={data ? <span className="pill bg-gold-dim px-2 py-0.5 font-mono text-[10.5px] text-gold">today {money(data.today.usd)}</span> : undefined}>AI spend on this site</CardTitle>
+      {!data ? (
+        <Skeleton className="h-[120px]" />
+      ) : (
+        <>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[420px] text-[12.5px]">
+              <thead>
+                <tr className="text-left text-[11px] text-ink-3">
+                  <th className="pb-2 font-normal">Today</th>
+                  <th className="pb-2 text-right font-normal">Runs</th>
+                  <th className="pb-2 text-right font-normal">Tokens in</th>
+                  <th className="pb-2 text-right font-normal">Tokens out</th>
+                  <th className="pb-2 text-right font-normal">Estimate</th>
+                </tr>
+              </thead>
+              <tbody className="font-mono">
+                {(["analyst", "brief", "investigation", "headline"] as const).map((k) => {
+                  const b = data.today.kinds[k];
+                  return (
+                    <tr key={k} className="border-t border-line">
+                      <td className="py-1.5 font-sans text-ink-2">{KIND_LABEL[k]}</td>
+                      <td className="py-1.5 text-right">{b.runs}</td>
+                      <td className="py-1.5 text-right">{compact(b.input + b.cacheRead + b.cacheWrite)}</td>
+                      <td className="py-1.5 text-right">{compact(b.output)}</td>
+                      <td className="py-1.5 text-right text-ink">{money(b.usd)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            <Stat label="Last 7 days" value={money(data.last7.usd)} sub={`${data.last7.runs} runs on this site's key`} />
+            <Stat label="Shared analyst today" value={`${data.sharedAnalyst.usedToday} / ${data.sharedAnalyst.perDay}`} sub={`${data.sharedAnalyst.perHour} per visitor per hour`} />
+            <Stat label="Schedule" value={`brief ${every(data.schedule.briefMinutes)} · scan ${every(data.schedule.scanMinutes)}`} sub={`${data.schedule.investigationsToday} of ${data.schedule.investigationsPerDay} investigations today`} />
+          </div>
+          <p className="mt-3 text-[11.5px] leading-relaxed text-ink-3">
+            Estimated from token counts at Anthropic's published rates. Questions on visitors' own keys are not included ({data.today.visitorRuns} today). The Anthropic Console has the exact bill.
+          </p>
+        </>
       )}
     </Card>
   );
@@ -108,6 +162,7 @@ export default function Status() {
           <div className="grid gap-4 lg:grid-cols-3">
             <AutomationCard />
             <PreferencesCard />
+            <SpendCard />
             <Card>
               <CardTitle>CoinMarketCap plan</CardTitle>
               <div className="grid grid-cols-2 gap-2.5">

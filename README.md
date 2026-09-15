@@ -8,7 +8,7 @@ plain language. The analyst is a Claude agent with 19 tools over the CoinMarketC
 decides which endpoints answer a question, calls them, computes what the API does not
 provide, and shows every call it made. On its own, Argus scans the top 200 every four hours,
 flags moves that are unusual for that coin, investigates them and writes the headline; and
-every four hours it writes a market brief without anyone typing a prompt.
+twice a day it writes a market brief without anyone typing a prompt.
 
 Built for the [Build with CMC: API Hackathon](https://dorahacks.io/hackathon/coinmarketcap-api-202609/detail),
 track **AI Agents and Automation**. Live: **https://argus-production-d392.up.railway.app**
@@ -36,7 +36,7 @@ Also: a first-run welcome tour with the Argus owl, a Cmd+K command palette (coin
 | "Which sectors are rotating?" | Reads all categories, ranks by market cap and volume change, then drills into the constituents of the movers. |
 | "Is it altseason?" | Combines the Altcoin Season Index, BTC dominance and its 24h change, and Fear & Greed into one read. |
 | "Why is my portfolio down?" | Prices the person's holdings, applies the same attribution to the whole basket, names the positions that drove it, and compares with simply holding Bitcoin ([src/services/portfolio.ts](src/services/portfolio.ts)). CoinMarketCap has no holdings endpoint; the amounts come from the browser and the analysis is all derived. |
-| Automated brief | Every four hours the agent writes a structured brief: backdrop, movers, sector rotation, leverage and risk, watch list. Shown on the home screen as a sliding card deck. |
+| Automated brief | Twice a day the agent writes a structured brief: backdrop, movers, sector rotation, leverage and risk, watch list. Shown on the home screen as a sliding card deck. |
 | Watch loop | Every four hours a pure detector scores the top 200 against each coin's own hourly volatility ([src/services/watch.ts](src/services/watch.ts)). Flags get an agent investigation with a headline, deck and article, subject to cooldowns and a daily cap. |
 | Move attribution | `explain_move` computes the coin's beta to BTC over 30 days, splits the move into market, sector-excess and coin-specific parts, and adds the liquidation picture ([src/services/explain.ts](src/services/explain.ts)). Deterministic, so the same question gives the same numbers. |
 
@@ -96,6 +96,7 @@ Claude, which bills one. Two ways to provide it:
 - **Calm mode.** Stops the carousels from sliding on their own, and follows the device's reduce-motion setting by default.
 - **Honest failure.** A free probe checks the site's Anthropic key at boot, every 30 minutes and after any auth error. If Anthropic rejects it, a banner says so and points to bringing your own key.
 - **Owner-only switches.** Set `ARGUS_ADMIN_TOKEN` and pausing automation or forcing a brief needs it in the `x-admin-token` header. Status asks for it once and remembers it in that browser.
+- **Spend you can see.** Status estimates what the site's Anthropic key spent today and this week, by analyst questions, briefs, investigations and headlines. Questions on the shared key are capped per visitor per hour and per day (`ANALYST_SHARED_PER_HOUR`, `ANALYST_SHARED_PER_DAY`); visitors with their own key have no cap.
 
 ## CoinMarketCap endpoints used
 

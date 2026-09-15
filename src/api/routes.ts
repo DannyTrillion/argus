@@ -5,7 +5,9 @@ import { Hono } from "hono";
 import * as market from "../services/market.js";
 import { recentCalls, CmcApiError } from "../cmc/http.js";
 import { config } from "../config.js";
-import { currentBrief, getBrief, refreshBrief } from "../services/brief.js";
+import { BRIEF_REFRESH_MINUTES, currentBrief, getBrief, refreshBrief } from "../services/brief.js";
+import { usageSummary } from "../services/usage.js";
+import { LIMITS, sharedQuestionsToday } from "../services/limits.js";
 import { status } from "../services/status.js";
 import { explainMove, type Window } from "../services/explain.js";
 import { findings, scan } from "../services/watch.js";
@@ -105,6 +107,16 @@ api.post("/portfolio", async (c) => {
 // Bring your own key: what this deployment has, and a one-token test of a caller's key.
 // The key in the test body is used for that call only and never stored or logged.
 api.get("/keys", (c) => c.json(keyStatus()));
+
+// What the site's Anthropic key is spending, and the schedule and caps that bound it.
+api.get("/usage", (c) => {
+  const f = findings();
+  return c.json({
+    ...usageSummary(),
+    schedule: { briefMinutes: BRIEF_REFRESH_MINUTES, scanMinutes: f.intervalMinutes, investigationsPerDay: f.dailyCap, investigationsToday: f.investigationsToday },
+    sharedAnalyst: { perHour: LIMITS.perHour, perDay: LIMITS.perDay, usedToday: sharedQuestionsToday() },
+  });
+});
 api.post("/keys/test", async (c) => {
   const body = (await c.req.json().catch(() => ({}))) as { key?: string };
   const key = (body.key ?? "").trim();

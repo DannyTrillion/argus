@@ -12,6 +12,8 @@ import { explainMove, type Explanation } from "./explain.js";
 import { runAgent } from "../agent/agent.js";
 import { config } from "../config.js";
 import { automationPaused } from "./settings.js";
+import { recordUsage } from "./usage.js";
+import { BRIEF_REFRESH_MINUTES } from "./brief.js";
 
 export type SignalKind = "coin_move" | "volume_spike" | "liquidation_burst" | "dominance_break" | "sector_divergence" | "sentiment_shift";
 
@@ -53,7 +55,7 @@ const FILE = process.env.WATCH_STATE_FILE ?? ".cache/watch.json";
 const INTERVAL_MS = Number(process.env.WATCH_INTERVAL_MINUTES ?? 240) * 60_000;
 const COOLDOWN_MS = Number(process.env.WATCH_COOLDOWN_HOURS ?? 6) * 3_600_000;
 const MAX_PER_SCAN = Number(process.env.WATCH_MAX_PER_SCAN ?? 2);
-const MAX_PER_DAY = Number(process.env.WATCH_MAX_PER_DAY ?? 6);
+const MAX_PER_DAY = Number(process.env.WATCH_MAX_PER_DAY ?? 3);
 const MAX_FINDINGS = 40;
 
 // Declared before load() runs at module init: load() uses it, and a TDZ error there
@@ -199,7 +201,7 @@ async function investigate(s: Signal, apiKey?: string | null): Promise<Finding |
   const messages: BetaMessageParam[] = [{ role: "user", content: prompt }];
   let raw = "";
   try {
-    const r = await runAgent({ messages, maxIterations: 8, model: config.automationModel, apiKey, onEvent: (e) => { if (e.type === "api_call") { calls += 1; credits += e.record.creditCount; } } });
+    const r = await runAgent({ messages, maxIterations: 8, model: config.automationModel, apiKey, usageKind: "investigation", onEvent: (e) => { if (e.type === "api_call") { calls += 1; credits += e.record.creditCount; } } });
     raw = r.text.replace(/<followups>[\s\S]*$/i, "").trim();
   } catch (err) {
     // A failed run is not a finding. Saving it put "Investigation failed: 401" cards on Home
@@ -237,6 +239,7 @@ async function headlineFor(title: string, summary: string, apiKey?: string | nul
       max_tokens: 200,
       messages: [{ role: "user", content: `Write a headline (max 8 words, financial-news style, not just a ticker and a number) and a one-sentence deck (max 22 words, include the key number) for this finding titled "${title}":\n\n${summary}\n\nRespond exactly as two lines:\nHeadline: ...\nDeck: ...` }],
     });
+    recordUsage("headline", config.automationModel, { input: res.usage.input_tokens, output: res.usage.output_tokens, cacheRead: res.usage.cache_read_input_tokens ?? 0, cacheWrite: res.usage.cache_creation_input_tokens ?? 0 }, !apiKey);
     const text = res.content.filter((b): b is Extract<typeof b, { type: "text" }> => b.type === "text").map((b) => b.text).join("");
     const r = splitHeadline(text, title);
     if (r.headline === title || !r.deck) return null;
@@ -323,6 +326,7 @@ export function findings() {
     lastScanAt: state.lastScanAt,
     nextScanAt: state.nextScanAt,
     intervalMinutes: INTERVAL_MS / 60_000,
+    briefIntervalMinutes: BRIEF_REFRESH_MINUTES,
     investigationsToday: state.investigationsToday.count,
     dailyCap: MAX_PER_DAY,
     scanning: scanning !== null,
