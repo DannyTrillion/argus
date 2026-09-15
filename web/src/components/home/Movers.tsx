@@ -4,6 +4,7 @@ import { api, type Coin } from "../../lib/api";
 import { usd } from "../../lib/format";
 import { Change } from "../ui/Change";
 import { Card, CardTitle } from "../ui/Card";
+import { AskButton } from "../ui/AskButton";
 import { Skeleton } from "../ui/Skeleton";
 
 function List({ title, coins }: { title: string; coins: Coin[] }) {
@@ -33,7 +34,7 @@ export function Movers() {
   const { data, isLoading } = useQuery({ queryKey: ["movers"], queryFn: api.movers });
   return (
     <Card className="lg:col-span-2">
-      <CardTitle right={<span className="text-[11px] text-ink-3">24h · cap ≥ $50M · vol ≥ $5M</span>}>Movers that matter</CardTitle>
+      <CardTitle right={<div className="flex items-center gap-2"><span className="hidden text-[11px] text-ink-3 sm:inline">24h · cap ≥ $50M · vol ≥ $5M</span><AskButton q="What moved today and why?" /></div>}>Movers that matter</CardTitle>
       {isLoading || !data ? (
         <Skeleton className="h-[280px]" />
       ) : (

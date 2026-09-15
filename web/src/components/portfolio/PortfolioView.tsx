@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
-import { Sparkles, Wallet, TriangleAlert, Trash2, Info } from "lucide-react";
+import { Sparkles, Wallet, TriangleAlert, Trash2, Info, ClipboardPaste, Check } from "lucide-react";
+import { parseHoldings, resolveHoldings } from "../../lib/parseHoldings";
+import { useWatchlist } from "../../lib/watchlist";
 import clsx from "clsx";
 import { api, type Portfolio, type CoinRow } from "../../lib/api";
 import { useHoldings } from "../../lib/holdings";
@@ -351,6 +353,7 @@ function HoldingsEditor({
   positions: Portfolio["positions"];
 }) {
   const posById = useMemo(() => new Map(positions.map((p) => [p.id, p])), [positions]);
+  const [pasting, setPasting] = useState(false);
   const rows = ids
     .map((id) => {
       const coin = byId.get(id);
@@ -369,14 +372,20 @@ function HoldingsEditor({
 
   return (
     <Card className="p-0">
-      <div className="flex items-center justify-between px-4 pt-4">
+      <div className="flex items-center justify-between gap-2 px-4 pt-4">
         <CardTitle className="mb-0">Your holdings</CardTitle>
-        {holdings.count > 0 && (
-          <button onClick={holdings.clear} className="glass-2 pill inline-flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] text-ink-3 hover:text-down">
-            <Trash2 size={12} /> Clear all
+        <div className="flex items-center gap-2">
+          <button onClick={() => setPasting((x) => !x)} aria-expanded={pasting} className="glass-2 pill inline-flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] text-ink-2 hover:text-gold">
+            <ClipboardPaste size={12} /> Paste a list
           </button>
-        )}
+          {holdings.count > 0 && (
+            <button onClick={holdings.clear} className="glass-2 pill inline-flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] text-ink-3 hover:text-down">
+              <Trash2 size={12} /> Clear all
+            </button>
+          )}
+        </div>
       </div>
+      {pasting && <PastePanel byId={byId} holdings={holdings} onDone={() => setPasting(false)} />}
       <div className="mt-3 divide-y divide-line">
         {rows.length === 0 && (
           <div className="p-6 text-center text-[13px] text-ink-3">
@@ -405,5 +414,56 @@ function HoldingsEditor({
         ))}
       </div>
     </Card>
+  );
+}
+
+/** Paste "0.5 BTC, 10 SOL" instead of typing amounts row by row. Previews matches before adding. */
+function PastePanel({ byId, holdings, onDone }: { byId: Map<number, CoinRow>; holdings: ReturnType<typeof useHoldings>; onDone: () => void }) {
+  const [text, setText] = useState("");
+  const wl = useWatchlist();
+  const parsed = useMemo(() => parseHoldings(text), [text]);
+  const resolved = useMemo(() => resolveHoldings(parsed.items, [...byId.values()]), [parsed, byId]);
+  const misses = [...resolved.unknown, ...parsed.unreadable];
+
+  const apply = () => {
+    for (const m of resolved.matched) {
+      holdings.set(m.id, m.amount);
+      if (!wl.has(m.id)) wl.toggle(m.id);
+    }
+    onDone();
+  };
+
+  return (
+    <div className="mx-4 mt-3 rounded-2xl border border-line bg-surface-2 p-3.5">
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        rows={3}
+        autoFocus
+        spellCheck={false}
+        placeholder={"0.5 BTC, 10 SOL\n2,500 XRP"}
+        aria-label="Paste your holdings"
+        className="w-full resize-y bg-transparent font-mono text-[13px] text-ink placeholder:text-ink-3 focus:outline-none"
+      />
+      {text.trim() && (
+        <div className="mt-2 flex flex-wrap gap-1.5 text-[11.5px]">
+          {resolved.matched.map((m) => (
+            <span key={m.id} className="pill bg-up-dim px-2 py-0.5 font-mono text-up">{m.amount} {m.symbol}</span>
+          ))}
+          {misses.map((u) => (
+            <span key={u} className="pill bg-down-dim px-2 py-0.5 font-mono text-down" title="Not recognised, or not in the top 200">{u}</span>
+          ))}
+        </div>
+      )}
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <span className="text-[11.5px] text-ink-3">Amount and symbol, separated by commas or new lines. Matches the top 200 coins and replaces amounts you already had.</span>
+        <div className="flex shrink-0 justify-end gap-2">
+          <button onClick={onDone} className="pill px-3 py-1.5 text-[12px] text-ink-2 hover:text-ink">Cancel</button>
+          <button onClick={apply} disabled={resolved.matched.length === 0} className="pill inline-flex items-center gap-1.5 bg-gold px-3.5 py-1.5 text-[12px] font-medium text-bg hover:bg-gold-2 disabled:opacity-50">
+            <Check size={13} /> {resolved.matched.length > 0 ? `Add ${resolved.matched.length}` : "Add"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

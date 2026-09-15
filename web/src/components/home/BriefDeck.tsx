@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
-import { Globe, TrendingUp, Layers, Flame, Eye, Sparkles } from "lucide-react";
+import { Globe, TrendingUp, Layers, Flame, Eye, Sparkles, ChevronUp, ChevronDown } from "lucide-react";
 import clsx from "clsx";
 import { api, type Coin } from "../../lib/api";
 import { parseBrief } from "../../lib/brief";
@@ -16,6 +16,7 @@ import { Sparkline } from "../ui/Sparkline";
 import { Gauge } from "../ui/Gauge";
 import { Skeleton } from "../ui/Skeleton";
 import { Markdown } from "../ui/Markdown";
+import { useCalm } from "../../lib/calm";
 
 type Accent = "gold" | "up" | "down" | "blue";
 const ACCENT: Record<Accent, { text: string; hex: string }> = {
@@ -71,11 +72,13 @@ export function BriefDeck({ className }: { className?: string }) {
   const [i, setI] = useState(0);
   const [prevIdx, setPrevIdx] = useState<number | null>(null);
   const [hover, setHover] = useState(false);
+  const calm = useCalm();
   useEffect(() => {
-    if (hover || n < 2) return;
+    if (hover || calm || n < 2) return;
     const t = setInterval(() => setI((x) => { setPrevIdx(x); return (x + 1) % n; }), STEP_MS);
     return () => clearInterval(t);
-  }, [hover, n]);
+  }, [hover, calm, n]);
+  const step = (dir: 1 | -1) => setI((x) => { setPrevIdx(x); return (x + dir + n) % n; });
 
   const g = overview.data?.global;
   const liq = overview.data?.liquidations;
@@ -165,6 +168,13 @@ export function BriefDeck({ className }: { className?: string }) {
       onMouseLeave={() => setHover(false)}
       aria-roledescription="carousel"
     >
+      {/* Calm mode stops the auto-slide, so give people a quiet way to move through the cards. */}
+      {calm && n > 1 && (
+        <div className="absolute right-3 top-3 z-10 flex gap-1.5">
+          <button type="button" onClick={() => step(-1)} className="glass-2 flex h-8 w-8 items-center justify-center rounded-full text-ink-2 hover:text-ink" aria-label="Previous brief card"><ChevronUp size={15} /></button>
+          <button type="button" onClick={() => step(1)} className="glass-2 flex h-8 w-8 items-center justify-center rounded-full text-ink-2 hover:text-ink" aria-label="Next brief card"><ChevronDown size={15} /></button>
+        </div>
+      )}
       {slides.map((s, k) => {
         const active = k === i;
         const leaving = k === prevIdx && !active;
@@ -200,7 +210,7 @@ export function BriefDeck({ className }: { className?: string }) {
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[58%] bg-gradient-to-t from-[#0e0e10] via-[rgba(14,14,16,0.86)] to-transparent" />
 
             <div className="absolute left-5 top-4 flex items-center gap-1.5 text-[11px] text-ink-3">
-              <Sparkles size={11} className="text-gold" /> Today's brief · {timeAgo(brief.data.generatedAt)}
+              <Sparkles size={11} className="text-gold" /> {Date.now() - Date.parse(brief.data.generatedAt) < 86_400_000 ? "Today's brief" : "Latest brief"} · {timeAgo(brief.data.generatedAt)}
             </div>
 
             <div className="absolute inset-x-6 bottom-6">

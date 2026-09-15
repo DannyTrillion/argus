@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, XCircle, Activity, Pause, Play, KeyRound } from "lucide-react";
+import { CheckCircle2, XCircle, Activity, Pause, Play, KeyRound, Lock, Waves } from "lucide-react";
+import { useCalm, setCalm, getCalmSetting } from "../lib/calm";
 import { Link } from "react-router-dom";
 import { getAnthropicKey } from "../lib/keys";
 import clsx from "clsx";
-import { api } from "../lib/api";
+import { api, ApiError, setAdminToken } from "../lib/api";
 import { timeAgo } from "../lib/format";
 import { Card, CardTitle } from "../components/ui/Card";
 import { Skeleton } from "../components/ui/Skeleton";
@@ -24,6 +26,8 @@ function AutomationCard() {
   const keys = useQuery({ queryKey: ["keys"], queryFn: api.keys, staleTime: 60_000 });
   const ownKey = Boolean(getAnthropicKey());
   const toggle = useMutation({ mutationFn: api.setAutomation, onSuccess: (d) => { qc.setQueryData(["automation"], d); void qc.invalidateQueries({ queryKey: ["findings"] }); } });
+  const [token, setToken] = useState("");
+  const needsToken = toggle.error instanceof ApiError && toggle.error.status === 401;
   const paused = data?.automationPaused ?? false;
   return (
     <Card>
@@ -37,7 +41,7 @@ function AutomationCard() {
         <Link to="/keys" className="text-gold hover:underline">Keys</Link>
       </div>
       <p className="mt-3 text-[12px] leading-relaxed text-ink-3">
-        Every model call bills the server's Anthropic key, or a visitor's own key when they bring one. The brief runs every 4h and the watch loop every 30 min with at most 6 investigations a day. Pause both here when you are not using Argus; the Analyst keeps working on demand.
+        Scheduled work bills this site's Anthropic key: the brief and the watch scan each run every 4 hours, with at most 6 investigations a day. Scan now only runs on a visitor's own key. Pause the schedule here when you are not using Argus; the Analyst keeps working on demand.
       </p>
       <button
         onClick={() => toggle.mutate(!paused)}
@@ -46,6 +50,38 @@ function AutomationCard() {
       >
         {paused ? <><Play size={14} /> Resume automation</> : <><Pause size={14} /> Pause automation</>}
       </button>
+      {data?.adminLocked && !needsToken && <div className="mt-2 flex items-center gap-1.5 text-[11.5px] text-ink-3"><Lock size={11} /> Owner only on this deployment</div>}
+      {needsToken && (
+        <div className="glass-2 mt-3 rounded-2xl p-3">
+          <div className="flex items-center gap-1.5 text-[12.5px] text-ink"><Lock size={12} className="text-gold" /> Only the owner can change this</div>
+          <p className="mt-1 text-[11.5px] leading-relaxed text-ink-3">Enter the admin token for this deployment. It is saved in this browser so you only type it once.</p>
+          <div className="mt-2 flex gap-2">
+            <input value={token} onChange={(e) => setToken(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && token.trim()) { setAdminToken(token); toggle.mutate(!paused); } }} type="password" autoComplete="off" placeholder="Admin token" aria-label="Admin token" className="min-w-0 flex-1 rounded-xl border border-line bg-transparent px-3 py-1.5 font-mono text-[12.5px] text-ink placeholder:text-ink-3 focus:border-gold/40 focus:outline-none" />
+            <button onClick={() => { setAdminToken(token); toggle.mutate(!paused); }} disabled={!token.trim() || toggle.isPending} className="pill shrink-0 bg-gold px-3.5 py-1.5 text-[12px] font-medium text-bg hover:bg-gold-2 disabled:opacity-50">Unlock</button>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function PreferencesCard() {
+  const calm = useCalm();
+  const chosen = getCalmSetting();
+  return (
+    <Card>
+      <CardTitle right={<span className={clsx("pill px-2 py-0.5 font-mono text-[10.5px]", calm ? "bg-gold-dim text-gold" : "glass-2 text-ink-3")}>{calm ? "on" : "off"}</span>}>Calm mode</CardTitle>
+      <div className="flex items-start gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold-dim text-gold"><Waves size={16} /></span>
+        <p className="text-[12.5px] leading-relaxed text-ink-2">
+          Stops the story and brief carousels from sliding on their own. Use the arrows to move through them instead.{" "}
+          {chosen === null ? "Right now Argus follows your device's reduce-motion setting." : ""}
+        </p>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button onClick={() => setCalm(!calm)} className={clsx("pill px-4 py-2 text-[13px] font-medium", calm ? "glass-2 text-ink hover:border-gold/40" : "bg-gold text-bg hover:bg-gold-2")}>{calm ? "Turn calm mode off" : "Turn calm mode on"}</button>
+        {chosen !== null && <button onClick={() => setCalm(null)} className="pill px-3 py-2 text-[12.5px] text-ink-3 hover:text-ink">Follow my device</button>}
+      </div>
     </Card>
   );
 }
@@ -71,6 +107,7 @@ export default function Status() {
         <>
           <div className="grid gap-4 lg:grid-cols-3">
             <AutomationCard />
+            <PreferencesCard />
             <Card>
               <CardTitle>CoinMarketCap plan</CardTitle>
               <div className="grid grid-cols-2 gap-2.5">

@@ -35,6 +35,9 @@ export function canRunModel(header: string | undefined): boolean {
 export function keyStatus() {
   return {
     serverKey: serverHasAnthropicKey(),
+    /** null until the first probe answers; false means Anthropic rejected the deployment's key. */
+    serverKeyHealthy: health.ok,
+    serverKeyCheckedAt: health.checkedAt,
     cmcKey: !config.keyless,
     analystModel: config.model,
     automationModel: config.automationModel,
@@ -54,4 +57,48 @@ export async function testAnthropicKey(key: string): Promise<{ ok: true; model: 
     if (err instanceof Anthropic.RateLimitError) return { ok: true, model: config.model };
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
+}
+
+// ---------- server key health ----------
+// The deployment's key once died silently and broke automation for four days. A free
+// models-list call checks it at boot, every 30 minutes, and right after an auth failure,
+// so the UI can say "analyst unavailable" instead of showing broken cards.
+
+let health: { ok: boolean | null; checkedAt: string | null } = { ok: null, checkedAt: null };
+let probing: Promise<void> | null = null;
+let healthTimer: NodeJS.Timeout | null = null;
+
+export function recheckServerKey(): Promise<void> {
+  const key = process.env.ANTHROPIC_API_KEY?.trim();
+  if (!key) return Promise.resolve();
+  if (probing) return probing;
+  probing = (async () => {
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/models?limit=1", {
+        headers: { "x-api-key": key, "anthropic-version": "2023-06-01" },
+        signal: AbortSignal.timeout(15_000),
+      });
+      const checkedAt = new Date().toISOString();
+      // Only 401/403 say the key itself is bad. Rate limits and outages say nothing about it.
+      if (res.status === 401 || res.status === 403) {
+        if (health.ok !== false) console.error(`[keys] Anthropic rejected the server key (HTTP ${res.status}); analyst and automation are down until it is replaced`);
+        health = { ok: false, checkedAt };
+      } else if (res.ok) {
+        if (health.ok === false) console.log("[keys] server key accepted again");
+        health = { ok: true, checkedAt };
+      }
+    } catch {
+      /* network trouble: keep the previous verdict */
+    } finally {
+      probing = null;
+    }
+  })();
+  return probing;
+}
+
+export function startKeyHealth(): void {
+  if (healthTimer || !serverHasAnthropicKey()) return;
+  void recheckServerKey();
+  healthTimer = setInterval(() => void recheckServerKey(), 30 * 60_000);
+  healthTimer.unref();
 }

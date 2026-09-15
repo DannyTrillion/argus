@@ -13,6 +13,9 @@ import { stream } from "../services/stream.js";
 import { getSettings, setAutomationPaused } from "../services/settings.js";
 import { createShare, readShare } from "../services/share.js";
 import { KEY_HEADER, keyStatus, resolveAnthropicKey, testAnthropicKey } from "../services/keys.js";
+import { ADMIN_HEADER, adminAllowed, adminToken } from "../services/admin.js";
+
+const OWNER_ONLY = { error: "admin_required", message: "Only the owner of this deployment can change that." };
 import { analyzePortfolio, type Holding } from "../services/portfolio.js";
 
 export const api = new Hono();
@@ -63,7 +66,10 @@ api.get("/brief", async (c) => {
   if (cached) return c.json(cached);
   return c.json(await getBrief());
 });
-api.post("/brief/refresh", async (c) => c.json(await refreshBrief()));
+api.post("/brief/refresh", async (c) => {
+  if (!adminAllowed(c.req.header(ADMIN_HEADER))) return c.json(OWNER_ONLY, 401);
+  return c.json(await refreshBrief());
+});
 
 api.get("/status", async (c) => c.json(await status()));
 
@@ -110,10 +116,11 @@ api.post("/keys/test", async (c) => {
 api.get("/stream", (c) => c.json(stream()));
 
 // Automation switch: pauses the scheduled brief and the watch loop (manual runs still work).
-api.get("/automation", (c) => c.json({ ...getSettings(), analystModel: config.model, automationModel: config.automationModel }));
+api.get("/automation", (c) => c.json({ ...getSettings(), analystModel: config.model, automationModel: config.automationModel, adminLocked: adminToken() !== null }));
 api.post("/automation", async (c) => {
+  if (!adminAllowed(c.req.header(ADMIN_HEADER))) return c.json(OWNER_ONLY, 401);
   const body = (await c.req.json().catch(() => ({}))) as { paused?: boolean };
-  return c.json({ ...setAutomationPaused(Boolean(body.paused)), analystModel: config.model, automationModel: config.automationModel });
+  return c.json({ ...setAutomationPaused(Boolean(body.paused)), analystModel: config.model, automationModel: config.automationModel, adminLocked: adminToken() !== null });
 });
 
 // Read-only conversation shares.

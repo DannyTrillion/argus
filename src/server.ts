@@ -20,7 +20,7 @@ import { runAgent, describeError } from "./agent/agent.js";
 import { api } from "./api/routes.js";
 import { startBriefSchedule } from "./services/brief.js";
 import { startWatch } from "./services/watch.js";
-import { KEY_HEADER, canRunModel, resolveAnthropicKey } from "./services/keys.js";
+import { KEY_HEADER, canRunModel, resolveAnthropicKey, startKeyHealth } from "./services/keys.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const webDist = join(here, "..", "web", "dist");
@@ -107,4 +107,5 @@ serve({ fetch: app.fetch, port: config.port }, (info) => {
   console.log(`Argus listening on http://localhost:${info.port} (model: ${config.model})`);
   startBriefSchedule();
   startWatch();
+  startKeyHealth();
 });

@@ -8,6 +8,7 @@ import { config } from "../config.js";
 import { onCall, callContext, type CallRecord } from "../cmc/http.js";
 import { SYSTEM_PROMPT } from "./prompt.js";
 import { createTools, type ToolEvent } from "./tools.js";
+import { recheckServerKey } from "../services/keys.js";
 
 export type AgentEvent =
   | { type: "text"; delta: string }
@@ -114,6 +115,8 @@ async function runAgentInner(opts: RunOptions, runId: string): Promise<RunResult
     });
     return { messages: [...runner.params.messages], text: finalText };
   } catch (err) {
+    // A rejected server key: re-probe now so the UI banner appears within seconds, not 30 minutes.
+    if (!opts.apiKey && err instanceof Anthropic.AuthenticationError) void recheckServerKey();
     const message = describeError(err);
     onEvent({ type: "error", message });
     throw err;

@@ -9,7 +9,9 @@ Deadline: **30 Sep 2026, 23:59 UTC**. Track: **AI Agents and Automation**.
 - [ ] Rotate the CoinMarketCap and Anthropic keys, then run the pre-push check at the bottom of this file
 - [ ] Push the public repo `DannyTrillion/argus` (MIT, README, `.env.example`, no `.env`)
 - [x] Deployed on Railway: https://argus-production-d392.up.railway.app (project `argus`, service `argus`, volume at `/app/.cache`)
-- [ ] On the deployed app open `/status`, resume automation, run "Scan now" so the coverflow has fresh findings
+- [ ] In the browser you record with, open `/keys` and add your own Anthropic key: "Scan now" only runs on a visitor's own key
+- [ ] If automation is paused, open `/status` and unlock the switch with `ARGUS_ADMIN_TOKEN` from your local `.env`
+- [ ] An hour before recording, press "Scan now" so the coverflow has fresh findings
 - [ ] Record the 2-minute video in your own voice (script below), upload unlisted to YouTube
 - [ ] Post on X with `#BuildwithCMC`, linking the BUIDL page (draft below), paste the post URL into the BUIDL
 - [ ] Submit the BUIDL: title, tagline, description, repo, video, live URL, X post, API feedback
@@ -25,7 +27,7 @@ Argus is a full web app on live CoinMarketCap data: a market dashboard, coin exp
 pages with computed risk profiles, a watchlist with correlation analysis, and an analyst you
 ask in plain language. Three things make it more than a wrapper around API calls.
 
-**1. It watches the market on its own.** A watch loop scans the top 100 every 30 minutes
+**1. It watches the market on its own.** A watch loop scans the top 200 every four hours
 using hourly `quotes/historical`, and a pure anomaly detector flags moves that are unusual
 against each coin's own recent volatility, not just "biggest gainer". For each flag the agent
 runs an investigation with the full tool set and writes a poster headline, a deck and a short
@@ -116,7 +118,7 @@ names out loud where marked; judges listen for them.
 
 **0:00–0:15 Hook.** Home screen, coverflow moving.
 "This is Argus. It's a crypto market terminal, but the part that matters is that it watches
-CoinMarketCap on its own. Every half hour it scans the top hundred with hourly
+CoinMarketCap on its own. Every four hours it scans the top two hundred with hourly
 quotes-historical, flags moves that are unusual for that coin, and investigates them."
 
 **0:15–0:40 Argus noticed.** Click Read more on a card, scroll the article, tap Ask Argus.
@@ -157,7 +159,7 @@ and the analyst evidence panel. Replace `<buidl-url>`.
 > Built Argus for #BuildwithCMC: a market terminal with an AI analyst that watches
 > @CoinMarketCap for you.
 >
-> Every 30 min it scans the top 100, flags unusual moves, investigates them and writes the
+> Every 4 hours it scans the top 200, flags unusual moves, investigates them and writes the
 > headline. Ask "why is SOL moving" and it splits the move into market beta, sector and
 > coin-specific, showing every API call and its credit cost.
 >

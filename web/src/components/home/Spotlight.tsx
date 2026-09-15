@@ -14,6 +14,7 @@ import { usd, pct, timeAgo } from "../../lib/format";
 import { Skeleton } from "../ui/Skeleton";
 import { Change } from "../ui/Change";
 import { StoryCoverflow } from "./StoryCoverflow";
+import { Term } from "../ui/Term";
 
 /** 240 -> "4h", 90 -> "90 min". */
 function every(min?: number): string {
@@ -34,8 +35,10 @@ function NoticedFeed() {
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-[11.5px] text-ink-3">
         <span>
           {data?.paused ? <span className="pill mr-1.5 bg-down-dim px-2 py-0.5 text-down">automation paused</span> : null}
-          Scans 200 coins, sectors, liquidations, dominance and sentiment every {every(data?.intervalMinutes)}
-          {data?.lastScanAt ? ` · last scan ${timeAgo(data.lastScanAt)}` : ""} · brief every 4h
+          <span className="hidden sm:inline">Scans 200 coins, sectors, liquidations, dominance and sentiment every {every(data?.intervalMinutes)}</span>
+          <span className="sm:hidden">Scans every {every(data?.intervalMinutes)}</span>
+          {data?.lastScanAt ? ` · last ${timeAgo(data.lastScanAt)}` : ""}
+          <span className="hidden sm:inline"> · brief every 4h</span>
         </span>
         <button
           data-tour="scan"
@@ -88,9 +91,9 @@ function NoticedFeed() {
 
 function AttributionBar({ e }: { e: Explanation }) {
   const parts = [
-    { label: "Market beta", value: e.market_component_pct ?? 0, color: "#8fb7ff" },
-    { label: e.sector ? `${e.sector.name} sector` : "Sector", value: e.sector?.excess_pct ?? 0, color: "#c99cff" },
-    { label: "Coin-specific", value: e.coin_specific_pct ?? 0, color: "#e7c46a" },
+    { label: "Market beta", term: "beta" as const, value: e.market_component_pct ?? 0, color: "#8fb7ff" },
+    { label: e.sector ? `${e.sector.name} sector` : "Sector", term: "sector" as const, value: e.sector?.excess_pct ?? 0, color: "#c99cff" },
+    { label: "Coin-specific", term: "coin-specific" as const, value: e.coin_specific_pct ?? 0, color: "#e7c46a" },
   ];
   const scale = Math.max(1, ...parts.map((p) => Math.abs(p.value)), Math.abs(e.coin_change_pct));
   return (
@@ -98,7 +101,7 @@ function AttributionBar({ e }: { e: Explanation }) {
       {parts.map((p) => (
         <div key={p.label}>
           <div className="mb-1 flex items-center justify-between text-[11.5px]">
-            <span className="text-ink-2">{p.label}</span>
+            <Term k={p.term} className="text-ink-2">{p.label}</Term>
             <span className="font-mono" style={{ color: p.color }}>{pct(p.value, 2)}</span>
           </div>
           <div className="relative h-2 w-full rounded-full bg-surface-2">

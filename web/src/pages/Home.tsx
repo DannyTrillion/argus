@@ -13,6 +13,8 @@ import { BriefDeck } from "../components/home/BriefDeck";
 import { Card, CardTitle } from "../components/ui/Card";
 import { Gauge } from "../components/ui/Gauge";
 import { Skeleton } from "../components/ui/Skeleton";
+import { Term } from "../components/ui/Term";
+import { AskButton } from "../components/ui/AskButton";
 
 const fade = { initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0 } };
 
@@ -40,13 +42,21 @@ export default function Home() {
       <motion.div {...fade} transition={{ duration: 0.4, delay: 0.05 }} data-tour="pulse" className="grid min-w-0 grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
         {g ? (
           <>
-            <StatTile label="Total market cap" value={usd(g.total_market_cap, { compact: true })} change={g.total_market_cap_yesterday_percentage_change} spark={spark("total_market_cap")} />
-            <StatTile label="24h volume" value={usd(g.total_volume_24h, { compact: true })} change={g.total_volume_24h_yesterday_percentage_change} spark={spark("total_volume_24h")} />
-            <StatTile label="BTC dominance" value={`${g.btc_dominance.toFixed(2)}%`} change={g.btc_dominance_24h_percentage_change} spark={spark("btc_dominance")} foot={`ETH ${g.eth_dominance.toFixed(1)}%`} />
-            <Card className="flex items-center justify-center p-3 sm:p-5">
+            <StatTile label={<Term k="market-cap">Total market cap</Term>} value={usd(g.total_market_cap, { compact: true })} change={g.total_market_cap_yesterday_percentage_change} spark={spark("total_market_cap")} ask="What is driving the total crypto market cap today?" />
+            <StatTile label={<Term k="volume" />} value={usd(g.total_volume_24h, { compact: true })} change={g.total_volume_24h_yesterday_percentage_change} spark={spark("total_volume_24h")} ask="Why is crypto trading volume changing today?" />
+            <StatTile label={<Term k="dominance" />} value={`${g.btc_dominance.toFixed(2)}%`} change={g.btc_dominance_24h_percentage_change} spark={spark("btc_dominance")} foot={`ETH ${g.eth_dominance.toFixed(1)}%`} ask="What does today's BTC dominance say about altcoins?" />
+            <Card className="flex flex-col items-center justify-center gap-1 p-3 sm:p-4">
+              <div className="flex w-full items-center justify-between gap-1 text-[12px] text-ink-2">
+                <Term k="fear-greed" />
+                <AskButton q="What is behind today's Fear & Greed reading?" className="-mr-1.5" />
+              </div>
               {fg && <Gauge value={fg.value} label={fg.value_classification} color={fg.value > 60 ? "#6fd39c" : fg.value < 40 ? "#ef6f6f" : "#e7c46a"} />}
             </Card>
-            <Card className="col-span-2 flex items-center justify-center p-3 sm:p-5 lg:col-span-1">
+            <Card className="col-span-2 flex flex-col items-center justify-center gap-1 p-3 sm:p-4 lg:col-span-1">
+              <div className="flex w-full items-center justify-between gap-1 text-[12px] text-ink-2">
+                <Term k="altcoin-index">Altcoin Season</Term>
+                <AskButton q="Is it altcoin season? What does the index say right now?" className="-mr-1.5" />
+              </div>
               {alt && <Gauge value={alt.altcoin_index} label={alt.altcoin_index >= 75 ? "Altcoin season" : alt.altcoin_index <= 25 ? "Bitcoin season" : "Altcoin index"} />}
             </Card>
           </>

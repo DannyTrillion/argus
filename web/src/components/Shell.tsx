@@ -2,7 +2,8 @@ import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
-import { Search, Sparkles, LayoutGrid, Compass, Star, MessageSquareText, CircleHelp, Bell, KeyRound } from "lucide-react";
+import { Search, Sparkles, LayoutGrid, Compass, Star, MessageSquareText, CircleHelp, Bell, KeyRound, TriangleAlert } from "lucide-react";
+import { getAnthropicKey, onKeyChange } from "../lib/keys";
 import clsx from "clsx";
 import { api } from "../lib/api";
 import { Tour, useTour } from "./Tour";
@@ -192,9 +193,37 @@ export function Shell() {
         </div>
       </header>
       <main className="flex-1">
+        <KeyHealthBanner />
         <Outlet />
       </main>
       {!analyst && <MobileTabBar onSearch={() => palette.setOpen(true)} />}
+    </div>
+  );
+}
+
+/**
+ * Shown only when Anthropic has rejected the site's shared key. Says plainly what still
+ * works and how to keep asking, instead of letting answers fail one by one.
+ */
+function KeyHealthBanner() {
+  const { data } = useQuery({ queryKey: ["keys"], queryFn: api.keys, staleTime: 60_000, refetchInterval: 5 * 60_000 });
+  const [ownKey, setOwnKey] = useState(Boolean(getAnthropicKey()));
+  useEffect(() => onKeyChange(() => setOwnKey(Boolean(getAnthropicKey()))), []);
+  if (!data?.serverKey || data.serverKeyHealthy !== false) return null;
+  return (
+    <div role="status" className="mb-4 flex flex-col gap-2.5 rounded-2xl border border-down/30 bg-down-dim px-4 py-3 text-[12.5px] sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-start gap-2.5 text-ink-2">
+        <TriangleAlert size={15} className="mt-0.5 shrink-0 text-down" />
+        <span>
+          <span className="font-medium text-ink">The analyst is temporarily unavailable.</span> Market data, stories and the brief still work.{" "}
+          {ownKey ? "Your own key keeps the analyst working for you." : "Add your own Anthropic key to keep asking."}
+        </span>
+      </div>
+      {!ownKey && (
+        <NavLink to="/keys" className="pill shrink-0 self-start bg-gold px-3.5 py-1.5 text-[12px] font-medium text-bg hover:bg-gold-2 sm:self-auto">
+          Add my key
+        </NavLink>
+      )}
     </div>
   );
 }

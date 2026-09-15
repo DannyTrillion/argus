@@ -6,7 +6,7 @@ Argus is a full web app: a market dashboard, a coin explorer, coin pages with co
 profiles, a watchlist with correlation analysis, and an analyst you can ask questions in
 plain language. The analyst is a Claude agent with 19 tools over the CoinMarketCap API. It
 decides which endpoints answer a question, calls them, computes what the API does not
-provide, and shows every call it made. On its own, Argus scans the top 100 every half hour,
+provide, and shows every call it made. On its own, Argus scans the top 200 every four hours,
 flags moves that are unusual for that coin, investigates them and writes the headline; and
 every four hours it writes a market brief without anyone typing a prompt.
 
@@ -37,7 +37,7 @@ Also: a first-run welcome tour with the Argus owl, a Cmd+K command palette (coin
 | "Is it altseason?" | Combines the Altcoin Season Index, BTC dominance and its 24h change, and Fear & Greed into one read. |
 | "Why is my portfolio down?" | Prices the person's holdings, applies the same attribution to the whole basket, names the positions that drove it, and compares with simply holding Bitcoin ([src/services/portfolio.ts](src/services/portfolio.ts)). CoinMarketCap has no holdings endpoint; the amounts come from the browser and the analysis is all derived. |
 | Automated brief | Every four hours the agent writes a structured brief: backdrop, movers, sector rotation, leverage and risk, watch list. Shown on the home screen as a sliding card deck. |
-| Watch loop | Every 30 minutes a pure detector scores the top 100 against each coin's own hourly volatility ([src/services/watch.ts](src/services/watch.ts)). Flags get an agent investigation with a headline, deck and article, subject to cooldowns and a daily cap. |
+| Watch loop | Every four hours a pure detector scores the top 200 against each coin's own hourly volatility ([src/services/watch.ts](src/services/watch.ts)). Flags get an agent investigation with a headline, deck and article, subject to cooldowns and a daily cap. |
 | Move attribution | `explain_move` computes the coin's beta to BTC over 30 days, splits the move into market, sector-excess and coin-specific parts, and adds the liquidation picture ([src/services/explain.ts](src/services/explain.ts)). Deterministic, so the same question gives the same numbers. |
 
 ## Quick start
@@ -85,6 +85,16 @@ Claude, which bills one. Two ways to provide it:
   ([src/services/keys.ts](src/services/keys.ts)). The scheduled brief and watch loop only
   ever use the server key. With no server key, the Analyst shows a connect card instead of
   an error, and `POST /api/chat` and `POST /api/watch/scan` return 401 `no_key`.
+
+## Friendly by design
+
+- **Tap any jargon.** Dotted-underlined terms such as BTC dominance, Fear & Greed, liquidations and market beta open a one-line plain explanation.
+- **Explain this, everywhere.** Tiles, gauges and charts carry a small Explain button that opens the analyst with that question already asked.
+- **Scan now on your own key.** Scheduled scans run every four hours on the site's key. A visitor can scan on demand with their own key, which stays in their browser and is never stored in a database.
+- **Paste your portfolio.** Type "0.5 BTC, 10 SOL" instead of filling amounts row by row. Matches are previewed before they are added.
+- **Calm mode.** Stops the carousels from sliding on their own, and follows the device's reduce-motion setting by default.
+- **Honest failure.** A free probe checks the site's Anthropic key at boot, every 30 minutes and after any auth error. If Anthropic rejects it, a banner says so and points to bringing your own key.
+- **Owner-only switches.** Set `ARGUS_ADMIN_TOKEN` and pausing automation or forcing a brief needs it in the `x-admin-token` header. Status asks for it once and remembers it in that browser.
 
 ## CoinMarketCap endpoints used
 

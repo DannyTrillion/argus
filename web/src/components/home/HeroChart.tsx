@@ -6,6 +6,8 @@ import { useEChart, palette, tooltipStyle, axisStyle } from "../../lib/chart";
 import { usd } from "../../lib/format";
 import { Card, CardTitle } from "../ui/Card";
 import { Skeleton } from "../ui/Skeleton";
+import { Term } from "../ui/Term";
+import { AskButton } from "../ui/AskButton";
 
 const RANGES = [30, 90, 365] as const;
 
@@ -64,6 +66,8 @@ export function HeroChart() {
     <Card className="hud h-full">
       <CardTitle
         right={
+          <div className="flex items-center gap-2">
+          <AskButton q="What do total market cap and BTC dominance say about the market right now?" />
           <div className="glass-2 pill flex p-0.5">
             {RANGES.map((r) => (
               <button key={r} onClick={() => setDays(r)} className={clsx("pill px-3 py-1 font-mono text-[11px]", days === r ? "bg-ink text-bg" : "text-ink-2 hover:text-ink")}>
@@ -71,9 +75,10 @@ export function HeroChart() {
               </button>
             ))}
           </div>
+          </div>
         }
       >
-        Total market cap and BTC dominance
+        <Term k="market-cap">Total market cap</Term> and <Term k="dominance">BTC dominance</Term>
       </CardTitle>
       {isLoading ? <Skeleton className="h-[300px]" /> : <div ref={ref} className="h-[300px] w-full" />}
     </Card>

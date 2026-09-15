@@ -13,7 +13,8 @@
   --color-line-2: rgba(255, 255, 255, 0.14);
   --color-ink: #f2f0ea;
   --color-ink-2: #b7b3a9;
-  --color-ink-3: #77746c;
+  /* Raised from #77746c: small grey text was hard to read on phones (about 4.3:1 to 5.8:1 on the page ground). */
+  --color-ink-3: #8e8a81;
   --color-gold: #e7c46a;
   --color-gold-2: #f3d68b;
   --color-gold-dim: rgba(231, 196, 106, 0.16);

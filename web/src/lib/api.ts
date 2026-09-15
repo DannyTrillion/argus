@@ -75,8 +75,8 @@ export interface CoinDetail { coin: Coin; info: CoinInfo | null; performance: Pe
 export interface CompareResult { days: number; stats: Array<SeriesStats & { source: string }>; normalized: Array<{ date: string; values: Record<string, number | null> }>; correlation: Array<{ a: string; b: string; r: number | null }> }
 export interface MapEntry { id: number; name: string; symbol: string; slug: string; rank?: number }
 export interface Capability { name: string; endpoint: string; ok: boolean; note?: string }
-export interface Automation { automationPaused: boolean; analystModel: string; automationModel: string }
-export interface KeyStatus { serverKey: boolean; cmcKey: boolean; analystModel: string; automationModel: string }
+export interface Automation { automationPaused: boolean; analystModel: string; automationModel: string; adminLocked?: boolean }
+export interface KeyStatus { serverKey: boolean; serverKeyHealthy: boolean | null; serverKeyCheckedAt: string | null; cmcKey: boolean; analystModel: string; automationModel: string }
 export interface PortfolioPosition {
   id: number; symbol: string; name: string; rank: number | null; amount: number; price: number;
   value_usd: number; weight_pct: number; change_24h_pct: number | null; change_7d_pct: number | null;
@@ -146,6 +146,19 @@ export class ApiError extends Error {
 
 import { keyHeaders } from "./keys";
 
+/** Owner token for switches that change what the deployment spends. Kept in this browser. */
+const ADMIN_KEY = "argus.adminToken";
+export function getAdminToken(): string {
+  try { return localStorage.getItem(ADMIN_KEY) ?? ""; } catch { return ""; }
+}
+export function setAdminToken(token: string): void {
+  try { if (token.trim()) localStorage.setItem(ADMIN_KEY, token.trim()); else localStorage.removeItem(ADMIN_KEY); } catch { /* private mode */ }
+}
+function adminHeaders(): Record<string, string> {
+  const t = getAdminToken();
+  return t ? { "x-admin-token": t } : {};
+}
+
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`/api${path}`);
   if (!res.ok) {
@@ -180,8 +193,8 @@ export const api = {
   },
   readShare: (id: string) => get<{ id: string; title: string; createdAt: string; messages: import("./chat").ChatMessage[] }>(`/share/${encodeURIComponent(id)}`),
   setAutomation: async (paused: boolean) => {
-    const res = await fetch("/api/automation", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ paused }) });
-    if (!res.ok) throw new ApiError(res.status, res.statusText);
+    const res = await fetch("/api/automation", { method: "POST", headers: { "content-type": "application/json", ...adminHeaders() }, body: JSON.stringify({ paused }) });
+    if (!res.ok) throw new ApiError(res.status, ((await res.json().catch(() => ({}))) as { message?: string }).message ?? res.statusText);
     return (await res.json()) as Automation;
   },
   scanNow: async () => {

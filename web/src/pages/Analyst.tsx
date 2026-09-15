@@ -86,7 +86,9 @@ export default function Analyst() {
   const keys = useQuery({ queryKey: ["keys"], queryFn: api.keys, staleTime: 60_000 });
   const [ownKey, setOwnKey] = useState(Boolean(getAnthropicKey()));
   useEffect(() => onKeyChange(() => setOwnKey(Boolean(getAnthropicKey()))), []);
-  const locked = keys.data ? !keys.data.serverKey && !ownKey : false;
+  // Locked when there is no shared key, or Anthropic rejected it, and this browser has none.
+  const sharedDown = keys.data ? !keys.data.serverKey || keys.data.serverKeyHealthy === false : false;
+  const locked = sharedDown && !ownKey;
   const ask = (q: string) => chat.send(expandMentions(q, coins.data?.coins));
   const [histOpen, setHistOpen] = useState(false);
   const bottom = useRef<HTMLDivElement>(null);
@@ -218,7 +220,7 @@ export default function Analyst() {
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold-dim text-gold"><KeyRound size={16} /></span>
                 <div>
                   <div className="text-[14px] font-medium">Connect a key to ask</div>
-                  <div className="text-[12.5px] leading-relaxed text-ink-3">This deployment has no shared Anthropic key. Add your own and it stays in this browser. Everything else on Argus works without one.</div>
+                  <div className="text-[12.5px] leading-relaxed text-ink-3">{keys.data?.serverKey ? "The shared key on this site is unavailable right now." : "This site has no shared Anthropic key."} Add your own: it stays in this browser and is never stored in a database. Everything else on Argus works without one.</div>
                 </div>
               </div>
               <Link to="/keys" className="pill inline-flex shrink-0 items-center gap-1.5 bg-gold px-3.5 py-2 text-[12.5px] font-medium text-bg hover:bg-gold-2">Add my key</Link>

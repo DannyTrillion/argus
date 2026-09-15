@@ -15,6 +15,9 @@ import { pct, timeAgo } from "../../lib/format";
 import { Markdown } from "../ui/Markdown";
 import { Mascot } from "../ui/Mascot";
 import { Skeleton } from "../ui/Skeleton";
+import { Term } from "../ui/Term";
+import { isGlossaryKey } from "../../lib/glossary";
+import { useCalm } from "../../lib/calm";
 
 const ACCENT: Record<Story["accent"], { text: string; hex: string }> = {
   gold: { text: "text-gold", hex: "231,196,106" },
@@ -75,7 +78,7 @@ function Card({ s, onRead, dim }: { s: Story; onRead: () => void; dim: boolean }
         <div className="mt-2 line-clamp-2 text-[12.5px] leading-snug text-ink-2">{s.deck}</div>
       </div>
       <div className="relative mt-4 flex items-center justify-between">
-        {s.attribution ? <span className="pill bg-gold-dim px-2 py-0.5 font-mono text-[10.5px] text-gold">{s.attribution.read}</span> : <span />}
+        {s.attribution ? <span className="pill bg-gold-dim px-2 py-0.5 font-mono text-[10.5px] text-gold">{isGlossaryKey(s.attribution.read) ? <Term k={s.attribution.read}>{s.attribution.read}</Term> : s.attribution.read}</span> : <span />}
         <button onClick={(e) => { e.stopPropagation(); onRead(); }} className="pill flex items-center gap-1.5 bg-ink px-3.5 py-1.5 text-[12px] font-medium text-bg hover:bg-white">
           Read more <ArrowRight size={12} />
         </button>
@@ -148,6 +151,7 @@ export function StoryCoverflow() {
   const n = stories.length;
   const [i, setI] = useState(0);
   const [hover, setHover] = useState(false);
+  const calm = useCalm();
   const [open, setOpen] = useState<string | null>(null);
   const wrap = useRef<HTMLDivElement>(null);
   const width = useSize(wrap);
@@ -159,10 +163,10 @@ export function StoryCoverflow() {
   useEffect(() => { if (i >= n && n > 0) setI(0); }, [n, i]);
   useEscape(open !== null, () => setOpen(null));
   useEffect(() => {
-    if (hover || open || n < 2) return;
+    if (hover || calm || open || n < 2) return;
     const t = setInterval(() => setI((x) => (x + 1) % n), STEP_MS);
     return () => clearInterval(t);
-  }, [hover, open, n]);
+  }, [hover, calm, open, n]);
 
   if (isLoading) return <Skeleton className="h-[440px]" />;
   if (n === 0) {
@@ -170,7 +174,7 @@ export function StoryCoverflow() {
       <div className="flex flex-col items-center gap-3 py-10 text-center">
         <Mascot size={88} />
         <div className="text-[14px]">Nothing to show yet.</div>
-        <div className="max-w-[460px] text-[12.5px] text-ink-3">Argus scans the market every ten minutes and writes a brief every four hours. Stories appear here as they land.</div>
+        <div className="max-w-[460px] text-[12.5px] text-ink-3">Argus scans the market and writes a brief every four hours. Stories appear here as they land.</div>
       </div>
     );
   }
@@ -232,8 +236,8 @@ export function StoryCoverflow() {
                   </motion.div>
                 );
               })}
-              <button onClick={() => setI((x) => (x - 1 + n) % n)} className="glass-2 absolute left-2 top-1/2 z-20 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-ink-2 opacity-0 transition-opacity hover:text-ink group-hover:opacity-100 md:flex" style={{ opacity: hover ? 1 : 0 }} aria-label="Previous"><ChevronLeft size={16} /></button>
-              <button onClick={() => setI((x) => (x + 1) % n)} className="glass-2 absolute right-2 top-1/2 z-20 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-ink-2 transition-opacity hover:text-ink md:flex" style={{ opacity: hover ? 1 : 0 }} aria-label="Next"><ChevronRight size={16} /></button>
+              <button onClick={() => setI((x) => (x - 1 + n) % n)} className="glass-2 absolute left-2 top-1/2 z-20 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-ink-2 opacity-0 transition-opacity hover:text-ink group-hover:opacity-100 md:flex" style={{ opacity: hover || calm ? 1 : 0 }} aria-label="Previous"><ChevronLeft size={16} /></button>
+              <button onClick={() => setI((x) => (x + 1) % n)} className="glass-2 absolute right-2 top-1/2 z-20 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-ink-2 transition-opacity hover:text-ink md:flex" style={{ opacity: hover || calm ? 1 : 0 }} aria-label="Next"><ChevronRight size={16} /></button>
             </div>
             <div className="mt-3 flex items-center justify-center gap-1.5">
               {stories.map((s, k) => (
