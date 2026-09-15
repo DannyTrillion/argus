@@ -126,7 +126,7 @@ quotes-historical, flags moves that are unusual for that coin, and investigates 
 
 **0:15-0:35 A finding.** Click Read more on a card, scroll the article, tap Ask Argus.
 "Each finding is a headline and a short article the agent wrote from real calls: quotes,
-categories, liquidations, news. Ask Argus takes it straight into the analyst."
+categories and liquidations. Ask Argus takes it straight into the analyst."
 
 **0:35-1:00 The analyst.** Ask "why is SOL moving today". Show the tool steps, the attribution
 bar and the evidence panel.
