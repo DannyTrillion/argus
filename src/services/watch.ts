@@ -78,7 +78,11 @@ function load(): State {
     const s = readState(FILE) ?? readState(FILE + ".bak");
     if (s && Array.isArray(s.findings)) {
       // Stablecoin findings predate the exclusion rule; drop them on load.
-      const findings = s.findings.filter((f) => !(f.subject?.type === "coin" && STABLE.test(f.subject.symbol))).slice(0, MAX_FINDINGS);
+      const findings = s.findings
+        .filter((f) => !(f.subject?.type === "coin" && STABLE.test(f.subject.symbol)))
+        // Failed investigations were once saved as findings; purge them.
+        .filter((f) => !(f.summary ?? "").startsWith("Investigation failed"))
+        .slice(0, MAX_FINDINGS);
       return { ...s, findings };
     }
   } catch (err) {
@@ -183,7 +187,7 @@ function questionFor(s: Signal): string {
   return "What changed in market sentiment today?";
 }
 
-async function investigate(s: Signal, apiKey?: string | null): Promise<Finding> {
+async function investigate(s: Signal, apiKey?: string | null): Promise<Finding | null> {
   const started = Date.now();
   let calls = 0;
   let credits = 0;
@@ -198,7 +202,10 @@ async function investigate(s: Signal, apiKey?: string | null): Promise<Finding> 
     const r = await runAgent({ messages, maxIterations: 8, model: config.automationModel, apiKey, onEvent: (e) => { if (e.type === "api_call") { calls += 1; credits += e.record.creditCount; } } });
     raw = r.text.replace(/<followups>[\s\S]*$/i, "").trim();
   } catch (err) {
-    raw = `Investigation failed: ${err instanceof Error ? err.message : String(err)}`;
+    // A failed run is not a finding. Saving it put "Investigation failed: 401" cards on Home
+    // for days while the key was dead. Log it and let the scan decide what to do next.
+    console.error(`[watch] investigation failed for ${s.title}:`, err instanceof Error ? err.message : err);
+    return null;
   }
   let { headline, deck, body } = splitHeadline(raw, s.title);
   if (headline === s.title || !deck) {
@@ -283,6 +290,12 @@ export function scan(apiKey?: string | null): Promise<Finding[]> {
         state.cooldowns[s.fingerprint] = new Date().toISOString();
         state.investigationsToday.count += 1;
         const f = await investigate(s, apiKey);
+        if (!f) {
+          // Refund the daily quota and stop this scan: the next signal would fail the same way
+          // (dead key, outage) and only burn CoinMarketCap credits. The cooldown stays.
+          state.investigationsToday.count -= 1;
+          break;
+        }
         fresh.push(f);
         state.findings = [f, ...state.findings].slice(0, MAX_FINDINGS);
         save();
@@ -326,7 +339,7 @@ export function startWatch(): void {
   }
   if (config.keyless) return;
   // Backfill headlines for older findings, then scan shortly after boot, then on the interval.
-  void ensureHeadlines().then((n) => { if (n) console.log(`[watch] backfilled ${n} headline(s)`); });
+  if (!automationPaused()) void ensureHeadlines().then((n) => { if (n) console.log(`[watch] backfilled ${n} headline(s)`); });
   setTimeout(() => { if (!automationPaused()) void scan(); }, 20_000).unref();
   timer = setInterval(() => { if (!automationPaused()) void scan(); }, INTERVAL_MS);
   timer.unref();

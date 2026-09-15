@@ -15,13 +15,13 @@ const finding = (id: string, symbol: string) => ({
   subject: { type: "coin", id: 1, symbol }, metric: 5, severity: 1, question: "q", investigatedAt: now, calls: 1, credits: 1,
 });
 writeFileSync(join(dir, "watch.json"), JSON.stringify({
-  findings: [finding("a", "BTC"), finding("b", "USDT"), finding("c", "SOL")],
+  findings: [finding("a", "BTC"), finding("b", "USDT"), finding("c", "SOL"), { ...finding("d", "ETH"), summary: "Investigation failed: 401 API key is invalid." }],
   cooldowns: {}, lastScanAt: now, nextScanAt: null, investigationsToday: { day: "", count: 0 }, lastFearGreed: null,
 }));
 process.env.WATCH_STATE_FILE = join(dir, "watch.json");
 process.env.SETTINGS_FILE = join(dir, "settings.json");
 
-test("watch findings load from disk at module init, stablecoins filtered", async () => {
+test("watch findings load from disk at module init, stablecoins and failed investigations dropped", async () => {
   const w = await import("../src/services/watch.js");
   const ids = w.findings().findings.map((f) => f.id);
   assert.deepEqual(ids, ["a", "c"]);
