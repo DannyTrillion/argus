@@ -12,7 +12,7 @@ import { findings, scan } from "../services/watch.js";
 import { stream } from "../services/stream.js";
 import { getSettings, setAutomationPaused } from "../services/settings.js";
 import { createShare, readShare } from "../services/share.js";
-import { KEY_HEADER, canRunModel, keyStatus, resolveAnthropicKey, testAnthropicKey } from "../services/keys.js";
+import { KEY_HEADER, keyStatus, resolveAnthropicKey, testAnthropicKey } from "../services/keys.js";
 import { analyzePortfolio, type Holding } from "../services/portfolio.js";
 
 export const api = new Hono();
@@ -79,9 +79,11 @@ api.get("/explain", async (c) => {
 // Argus noticed: findings feed and a manual scan trigger for demos.
 api.get("/findings", (c) => c.json(findings()));
 api.post("/watch/scan", async (c) => {
-  const header = c.req.header(KEY_HEADER);
-  if (!canRunModel(header)) return c.json({ error: "no_key", message: "No Anthropic key. Add yours on the Keys page to run investigations." }, 401);
-  const fresh = await scan(resolveAnthropicKey(header));
+  // Scheduled scans run on the deployment's key every few hours. A manual scan runs only on
+  // the visitor's own key, sent per request and never stored, so the shared key stays capped.
+  const own = resolveAnthropicKey(c.req.header(KEY_HEADER));
+  if (!own) return c.json({ error: "own_key_required", message: "Scan now runs on your own Anthropic key. Add it on the Keys page. It stays in your browser and is never stored in a database." }, 401);
+  const fresh = await scan(own);
   return c.json({ fresh, ...findings() });
 });
 

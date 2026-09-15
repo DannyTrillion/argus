@@ -10,7 +10,8 @@ import { Sparkles, ArrowRight, X } from "lucide-react";
 import clsx from "clsx";
 import { Mascot } from "./ui/Mascot";
 
-const KEY = "argus.tour.v1";
+// Bumped when the tour changes, so returning visitors see the new stops once.
+const KEY = "argus.tour.v2";
 
 interface Step {
   /** data-tour anchors to try in order; the first one visible wins (desktop vs mobile variants). */
@@ -24,7 +25,7 @@ interface Step {
 const STEPS: Step[] = [
   {
     title: "Hi, I'm Argus.",
-    body: "The hundred-eyed watcher, now watching the market. Every number you see here comes from a live CoinMarketCap call, and I can explain any of them. Thirty seconds, five stops.",
+    body: "The hundred-eyed watcher, now watching crypto. Every number here comes from a live CoinMarketCap call, and I can explain any of them. A few quick stops.",
     route: "/",
   },
   {
@@ -35,14 +36,20 @@ const STEPS: Step[] = [
   },
   {
     target: ["spotlight"],
-    title: "What Argus caught on its own",
-    body: "Every ten minutes the agent scans for unusual moves, volume spikes, liquidation bursts and sector breaks, investigates them itself, and writes a story. Read more opens the article; the second tab splits any move into market beta, sector and coin-specific.",
+    title: "What I caught on my own",
+    body: "Every four hours I scan 200 coins for unusual moves, volume spikes, liquidation bursts and sector breaks, then investigate and write the story. Tap Read more for the full article. The Move explainer tab splits any move into market, sector and coin-specific.",
+    route: "/",
+  },
+  {
+    target: ["scan"],
+    title: "Can't wait four hours?",
+    body: "Scan now runs a fresh scan on demand with your own Anthropic key. Your key stays in your browser and is never stored in a database.",
     route: "/",
   },
   {
     target: ["brief"],
     title: "A brief nobody had to ask for",
-    body: "Every four hours the agent reads the market through a dozen API calls and writes five cards: backdrop, movers, sector rotation, leverage, watch list. Tap one to ask about it.",
+    body: "Every four hours I write five cards: backdrop, movers, sector rotation, leverage and a watch list. Tap a card to ask about it.",
     route: "/",
   },
   {
@@ -53,14 +60,20 @@ const STEPS: Step[] = [
   },
   {
     target: ["nav", "nav-mobile"],
-    title: "Explore, Watchlist, Analyst",
-    body: "Explore is the top 200 with filters and sparklines. Star a coin to build a watchlist with correlation analysis. The Analyst answers questions in plain language.",
+    title: "Explore, Watchlist, Portfolio",
+    body: "Explore the top 200 and star coins to build a watchlist. Switch the Watchlist to Portfolio and add amounts: I price your holdings, explain today's move and flag concentration. Amounts are saved on this device.",
+    route: "/",
+  },
+  {
+    target: ["keys"],
+    title: "Bring your own key",
+    body: "The key icon opens Keys. Add your Anthropic key to unlock Scan now. It is tested once, kept in this browser, and sent only with your own requests.",
     route: "/",
   },
   {
     target: ["ask", "nav-mobile", "ask-card"],
     title: "Ask anything, see the evidence",
-    body: "Try \"Why is SOL moving today?\" The analyst chooses the endpoints, computes volatility and correlation the API does not provide, and lists every call it made.",
+    body: "Try \"Why is SOL moving today?\" I choose the endpoints, compute what the API does not provide, chart it, and list every call I made.",
     route: "/",
     cta: { label: "Ask the analyst", to: "/analyst?q=" + encodeURIComponent("Why is SOL moving today?") },
   },

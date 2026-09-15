@@ -183,7 +183,7 @@ export function Shell() {
             <Bell size={16} />
             {armed > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 font-mono text-[9.5px] font-semibold text-bg">{armed}</span>}
           </button>
-          <NavLink to="/keys" className={({ isActive }) => clsx("glass-2 hidden h-9 w-9 shrink-0 items-center justify-center rounded-full hover:text-ink sm:flex", isActive ? "text-gold" : "text-ink-3")} aria-label="Your Anthropic key" title="Keys">
+          <NavLink data-tour="keys" to="/keys" className={({ isActive }) => clsx("glass-2 hidden h-9 w-9 shrink-0 items-center justify-center rounded-full hover:text-ink sm:flex", isActive ? "text-gold" : "text-ink-3")} aria-label="Your Anthropic key" title="Keys">
             <KeyRound size={15} />
           </NavLink>
           <button onClick={tour.start} className="glass-2 hidden h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-3 hover:text-ink sm:flex" aria-label="Replay the welcome tour" title="Welcome tour">

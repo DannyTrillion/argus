@@ -208,16 +208,26 @@ export function StoryCoverflow() {
                       x: d * stepX,
                       rotateY: -d * (compact ? 26 : 22),
                       scale: center ? 1 : Math.abs(d) === 1 ? 0.9 : 0.8,
-                      opacity: !visible ? 0 : center ? 1 : Math.abs(d) === 1 ? 0.72 : 0.42,
-                      zIndex: 10 - Math.abs(d),
+                      // Cards stay fully opaque: a see-through card let the one behind print its
+                      // text through it mid-slide. Dimming is an overlay inside the card instead.
+                      opacity: visible ? 1 : 0,
                       filter: center ? "blur(0px)" : `blur(${Math.abs(d) * 0.4}px)`,
                     }}
                     transition={{ type: "spring", stiffness: 140, damping: 24, mass: 0.9 }}
                     className={clsx("absolute left-1/2 top-3 -translate-x-1/2", !visible && "pointer-events-none", !center && "cursor-pointer")}
-                    style={{ width: cardW, height: cardH, transformStyle: "preserve-3d" }}
+                    // Stacking order switches instantly; a sprung zIndex passes through ties where
+                    // two cards swap places mid-flight.
+                    style={{ width: cardW, height: cardH, transformStyle: "preserve-3d", zIndex: 10 - Math.abs(d) }}
                   >
                     <div className="relative h-full w-full">
                       <Card s={s} onRead={() => { setI(k); setOpen(s.id); }} dim={!center} />
+                      <motion.div
+                        aria-hidden
+                        className="pointer-events-none absolute inset-0 rounded-[22px] bg-[#070708]"
+                        initial={false}
+                        animate={{ opacity: center ? 0 : Math.abs(d) === 1 ? 0.38 : 0.62 }}
+                        transition={{ duration: 0.35, ease: "easeOut" }}
+                      />
                     </div>
                   </motion.div>
                 );

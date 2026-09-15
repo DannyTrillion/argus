@@ -50,7 +50,7 @@ interface State {
 }
 
 const FILE = process.env.WATCH_STATE_FILE ?? ".cache/watch.json";
-const INTERVAL_MS = Number(process.env.WATCH_INTERVAL_MINUTES ?? 30) * 60_000;
+const INTERVAL_MS = Number(process.env.WATCH_INTERVAL_MINUTES ?? 240) * 60_000;
 const COOLDOWN_MS = Number(process.env.WATCH_COOLDOWN_HOURS ?? 6) * 3_600_000;
 const MAX_PER_SCAN = Number(process.env.WATCH_MAX_PER_SCAN ?? 2);
 const MAX_PER_DAY = Number(process.env.WATCH_MAX_PER_DAY ?? 6);
@@ -285,15 +285,16 @@ export function scan(apiKey?: string | null): Promise<Finding[]> {
         const last = state.cooldowns[s.fingerprint];
         return !last || now - Date.parse(last) > COOLDOWN_MS;
       });
-      const budget = Math.max(0, Math.min(MAX_PER_SCAN, MAX_PER_DAY - state.investigationsToday.count));
+      // The daily cap bounds the deployment's key. A visitor's own key pays for its own scan.
+      const budget = apiKey ? MAX_PER_SCAN : Math.max(0, Math.min(MAX_PER_SCAN, MAX_PER_DAY - state.investigationsToday.count));
       for (const s of eligible.slice(0, budget)) {
         state.cooldowns[s.fingerprint] = new Date().toISOString();
-        state.investigationsToday.count += 1;
+        if (!apiKey) state.investigationsToday.count += 1;
         const f = await investigate(s, apiKey);
         if (!f) {
           // Refund the daily quota and stop this scan: the next signal would fail the same way
           // (dead key, outage) and only burn CoinMarketCap credits. The cooldown stays.
-          state.investigationsToday.count -= 1;
+          if (!apiKey) state.investigationsToday.count -= 1;
           break;
         }
         fresh.push(f);

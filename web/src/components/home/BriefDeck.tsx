@@ -89,11 +89,11 @@ export function BriefDeck({ className }: { className?: string }) {
 
   function headline(key: string): string {
     switch (key) {
-      case "backdrop": return g ? `${usd(g.total_market_cap, { compact: true })} · ${pct(g.total_market_cap_yesterday_percentage_change, 1)}` : "—";
-      case "movers": return gainers[0] ? `${gainers[0].symbol} ${pct(gainers[0].quote.percent_change_24h, 1)}` : "—";
-      case "sectors": return topSector ? `${topSector.name} ${pct(topSector.market_cap_change, 1)}` : "—";
-      case "leverage": return liq ? `${usd(liq.total_liquidations_24h, { compact: true })} · ${Math.round((liq.long_liquidations_24h / (liq.total_liquidations_24h || 1)) * 100)}% longs` : "—";
-      case "watch": return fg ? `${fg.value} · ${fg.value_classification}` : "—";
+      case "backdrop": return g ? `${usd(g.total_market_cap, { compact: true })} · ${pct(g.total_market_cap_yesterday_percentage_change, 1)}` : "";
+      case "movers": return gainers[0] ? `${gainers[0].symbol} ${pct(gainers[0].quote.percent_change_24h, 1)}` : "";
+      case "sectors": return topSector ? `${topSector.name} ${pct(topSector.market_cap_change, 1)}` : "";
+      case "leverage": return liq ? `${usd(liq.total_liquidations_24h, { compact: true })} · ${Math.round((liq.long_liquidations_24h / (liq.total_liquidations_24h || 1)) * 100)}% longs` : "";
+      case "watch": return fg ? `${fg.value} · ${fg.value_classification}` : "";
       default: return "";
     }
   }
@@ -177,8 +177,8 @@ export function BriefDeck({ className }: { className?: string }) {
             type="button"
             onClick={() => nav(`/analyst?q=${encodeURIComponent(s.topic.question)}`)}
             initial={false}
-            animate={active ? { y: 0, scale: 1, opacity: 1 } : leaving ? { y: -18, scale: 0.94, opacity: 0.45 } : { y: "104%", scale: 1, opacity: 1 }}
-            transition={active ? { type: "spring", stiffness: 150, damping: 24, mass: 0.9 } : { duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            animate={active ? { y: 0, scale: 1, opacity: 1 } : leaving ? { y: -24, scale: 0.94, opacity: 0 } : { y: "104%", scale: 1, opacity: 1 }}
+            transition={active ? { type: "spring", stiffness: 150, damping: 24, mass: 0.9 } : leaving ? { duration: 0.55, ease: [0.4, 0, 0.2, 1] } : { duration: 0 }}
             className={clsx("glass absolute inset-0 block cursor-pointer overflow-hidden p-0 text-left", !active && "pointer-events-none")}
             style={{
               boxShadow: active
@@ -186,6 +186,11 @@ export function BriefDeck({ className }: { className?: string }) {
                 : "0 0 0 1px rgba(231,196,106,0.10)",
               zIndex: active ? 3 : leaving ? 2 : 1,
               transformOrigin: "50% 100%",
+              // Opaque, not glass: a translucent card let the one underneath show through
+              // mid-slide, text over text. Each card now fully covers the last.
+              background: "linear-gradient(180deg, #141416 0%, #0e0e10 100%)",
+              backdropFilter: "none",
+              WebkitBackdropFilter: "none",
             }}
             tabIndex={active ? 0 : -1}
             aria-hidden={!active}
@@ -202,7 +207,8 @@ export function BriefDeck({ className }: { className?: string }) {
               <div className={clsx("flex items-center gap-1.5 text-[11px] uppercase tracking-wider", a.text)}>
                 <s.topic.icon size={12} /> {s.topic.label}
               </div>
-              <div className="font-display mt-2 text-[30px] font-medium leading-none tracking-tight tabular">{headline(s.topic.key)}</div>
+              {/* The live number is optional: when its data is missing, skip it rather than print a dash. */}
+              {headline(s.topic.key) && <div className="font-display mt-2 text-[30px] font-medium leading-none tracking-tight tabular">{headline(s.topic.key)}</div>}
               {s.section!.headline && <div className="font-display mt-2 text-[16px] font-medium leading-snug text-ink">{s.section!.headline}</div>}
               <Markdown text={s.section!.body} className="mt-2 text-[13px] leading-relaxed [&_p]:mb-1.5 [&_ul]:mb-0 [&_li]:my-0.5" />
               <div className="mt-4 flex items-center justify-between">

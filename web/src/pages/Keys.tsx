@@ -50,7 +50,7 @@ export default function Keys() {
           <div className="flex items-center gap-1.5 text-[13px] text-gold"><KeyRound size={13} /> Bring your own key</div>
           <h1 className="font-display mt-1 text-[30px] font-light leading-tight tracking-tight sm:text-[36px]">Your key, <span className="text-glow">your analyst.</span></h1>
           <p className="mt-2 max-w-[640px] text-[13.5px] leading-relaxed text-ink-2">
-            The market data on every screen is free to read. The analyst, Ask Argus and Scan now run on Claude, and Claude bills an Anthropic key. Paste yours here and Argus uses it for your questions only.
+            Market data on every screen is free. The analyst and Scan now run on Claude, which bills an Anthropic key. Paste yours and it powers your questions and your scans. Argus has no database of keys: yours stays in this browser.
           </p>
         </div>
         <Mascot size={88} className="hidden shrink-0 rounded-full sm:block" />
@@ -115,8 +115,8 @@ export default function Keys() {
 
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             {[
-              { icon: <ShieldCheck size={15} />, t: "Stays in this browser", d: "Saved in local storage on this device. Forget it here or clear site data to remove it." },
-              { icon: <Sparkles size={15} />, t: "Sent per request", d: "Travels as a header over HTTPS with each question. The server uses it once and keeps nothing." },
+              { icon: <ShieldCheck size={15} />, t: "Never in a database", d: "Saved only in this browser's local storage. Argus keeps no database of keys. Forget it here or clear site data to remove it." },
+              { icon: <Sparkles size={15} />, t: "Used once, then gone", d: "Travels over HTTPS with each question or scan. The server uses it for that request only, never logs it and never writes it to disk." },
               { icon: <Radar size={15} />, t: "Never in the schedule", d: "The 4h brief and the watch loop only ever use the deployment's own key, never yours." },
             ].map((x) => (
               <div key={x.t} className="glass-2 rounded-2xl p-3.5">
@@ -134,7 +134,7 @@ export default function Keys() {
               {[
                 ["Analyst", "Streaming answers with tool steps, inline charts, evidence of every CoinMarketCap call, and follow-up questions."],
                 ["Ask Argus", "Open any finding or coin straight into a conversation with that context loaded."],
-                ["Scan now", "Run the anomaly detector on the top 100 and investigate what it flags, on demand."],
+                ["Scan now", "Only with your own key. Run the anomaly detector on the top 200 right now instead of waiting for the next scheduled scan every four hours."],
               ].map(([t, d]) => (
                 <li key={t} className="flex gap-2.5"><Check size={14} className="mt-0.5 shrink-0 text-up" /><span><span className="font-medium text-ink">{t}.</span> {d}</span></li>
               ))}
