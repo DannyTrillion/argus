@@ -80,9 +80,14 @@ const KIND_LABEL: Record<string, string> = {
   sentiment_shift: "Sentiment",
 };
 
+/** Most cards the Home coverflow carries; older findings stay in /api/findings. */
+export const MAX_CARDS = 8;
+
 export function stream(): { stories: Story[]; lastScanAt: string | null; intervalMinutes: number; scanning: boolean } {
   const f = findings();
-  const fromFindings: Story[] = f.findings.map((x) => ({
+  // Freshest first, capped: the coverflow is a glance, not an archive.
+  const fresh = [...f.findings].sort((a, b) => Date.parse(b.investigatedAt) - Date.parse(a.investigatedAt)).slice(0, MAX_CARDS);
+  const fromFindings: Story[] = fresh.map((x) => ({
     id: x.id,
     type: "finding",
     kicker: `Argus noticed · ${KIND_LABEL[x.kind] ?? x.kind}`,

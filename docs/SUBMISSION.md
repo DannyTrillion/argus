@@ -5,7 +5,7 @@ Deadline: **30 Sep 2026, 23:59 UTC**. Track: **AI Agents and Automation**.
 
 ## Checklist
 
-- [ ] Register on DoraHacks with the same email as the CoinMarketCap API account
+- [x] Register on DoraHacks with the same email as the CoinMarketCap API account
 - [ ] Rotate the CoinMarketCap and Anthropic keys, then confirm `git log -p | grep -c sk-ant` is 0
 - [ ] Push the public repo `DannyTrillion/argus` (MIT, README, `.env.example`, no `.env`)
 - [x] Deployed on Railway: https://argus-production-d392.up.railway.app (project `argus`, service `argus`, volume at `/app/.cache`)
