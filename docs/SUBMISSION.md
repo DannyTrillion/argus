@@ -120,12 +120,16 @@ https://x.com/sadboy_042/status/2100711426629214664
 docs/marketing/logo-480.png
 ```
 
-**Vision** (the form asks for the problem this project solves)
+**Vision** (the form caps this at 250 characters; this is 228)
 
 ```
-Crypto dashboards tell you what moved. They never tell you why. Answering "why is SOL down 3% today" means pulling quotes, ninety days of history, sector performance and liquidation data, then doing the maths yourself. Most people cannot, so they trade on headlines and vibes.
+Crypto dashboards tell you what moved, never why. Argus watches the top 200 coins, flags what is unusual for each one, investigates it with live CoinMarketCap data, and shows every API call behind the answer so you can check it.
+```
 
-Argus does that work continuously. It watches the top 200 coins, flags moves that are unusual for that coin rather than just the largest, investigates each one with live CoinMarketCap data, and writes the story itself. Ask it anything and it shows every API call behind the answer, with the credit cost, so you can check the reasoning instead of trusting it.
+Alternative, 210 characters, leads with the concrete example:
+
+```
+Dashboards say SOL fell 3%. Nobody says why. Argus watches 200 coins, investigates the odd moves itself, and splits each one into market, sector and the coin, showing every CoinMarketCap call behind the answer.
 ```
 
 **Category**
