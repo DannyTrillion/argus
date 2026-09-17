@@ -15,8 +15,9 @@ Deadline: **30 Sep 2026, 23:59 UTC**. Track: **AI Agents and Automation**.
 - [x] Recorded 17 September, while the Startup plan is active
 - [x] Video: https://youtu.be/eG0nNZ3ARUE (set it to Unlisted, not Private, so judges can open it)
 - [ ] Nothing to switch for judging: the live site detects the Basic plan from 1 October and turns on judging mode by itself (see README, "CoinMarketCap budget and judging mode")
-- [x] Posted on X: https://x.com/sadboy_042/status/2100711426629214664 (paste this URL into the BUIDL, and reply to the post with the BUIDL link once it exists)
-- [ ] Submit the BUIDL: title, tagline, description, repo, video, live URL, X post, API feedback
+- [x] Posted on X: https://x.com/sadboy_042/status/2100711426629214664
+- [ ] Reply to that post with the demo, live, code and BUIDL links (the rules require the post to link the DoraHacks submission and the video)
+- [x] BUIDL submitted: https://dorahacks.io/buidl/48875
 
 ## BUIDL: title and tagline
 
@@ -313,7 +314,7 @@ It hunts moves on its own, every 4h.
 Demo (2 min): https://youtu.be/eG0nNZ3ARUE
 Live: https://argus-production-d392.up.railway.app
 Code: https://github.com/DannyTrillion/argus
-BUIDL: <paste after submitting>
+BUIDL: https://dorahacks.io/buidl/48875
 ```
 
 **Image alt text** (X asks for it; judges and screen readers both benefit)
