@@ -114,9 +114,29 @@ https://argus-production-d392.up.railway.app
 https://x.com/sadboy_042/status/2100711426629214664
 ```
 
-**Logo / cover image**
+**BUIDL logo** (480 x 480, PNG, 110 KB)
 
-Upload `docs/marketing/x-banner.png` as the cover. For the logo, use `web/public/mascot-512.png`.
+```
+docs/marketing/logo-480.png
+```
+
+**Vision** (the form asks for the problem this project solves)
+
+```
+Crypto dashboards tell you what moved. They never tell you why. Answering "why is SOL down 3% today" means pulling quotes, ninety days of history, sector performance and liquidation data, then doing the maths yourself. Most people cannot, so they trade on headlines and vibes.
+
+Argus does that work continuously. It watches the top 200 coins, flags moves that are unusual for that coin rather than just the largest, investigates each one with live CoinMarketCap data, and writes the story itself. Ask it anything and it shows every API call behind the answer, with the credit cost, so you can check the reasoning instead of trusting it.
+```
+
+**Category**
+
+```
+Crypto / Web3 (add AI / Robotics too if the form allows more than one)
+```
+
+**Cover image**
+
+Upload `docs/marketing/x-banner.png`.
 
 **Gallery screenshots**, in this order (in `docs/marketing/gallery/`):
 
