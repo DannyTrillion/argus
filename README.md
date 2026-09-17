@@ -269,9 +269,9 @@ pnpm typecheck && (cd web && npx tsc -b)    # both TypeScript projects
 
 ## Built with
 
-Written by Daniel Makinde with Claude Code (Claude Fable 5.1) as a pair programmer.
-Product decisions, the endpoint choices, the visual direction and the prompt are mine;
-much of the code was generated from those decisions and then reviewed and edited.
+Written by Daniel Makinde. TypeScript and Hono on the server, React 19, Vite, Tailwind v4
+and ECharts on the client, the Anthropic SDK tool runner for the agent, and the
+CoinMarketCap Pro API for every number.
 
 ## License
 
