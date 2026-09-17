@@ -195,12 +195,12 @@ Tags: `CoinMarketCap, crypto API, hackathon, AI agent, Claude, crypto dashboard,
 Post the hook with the banner attached, then put the links in the first reply: links eat into
 the 280 characters and the hook lands harder alone. Tag @CoinMarketCap once, in the main post.
 
-**Post 1** (281 characters, attach `docs/marketing/x-banner.png`)
+**Post 1** (264 characters, attach `docs/marketing/x-banner.png`)
 
 ```
 I got tired of dashboards that just say "SOL -3%".
 
-So I built an analyst that answers why: 3.34 points of that move was market beta, 0.06 sector, 0.01 the coin itself. Every @CoinMarketCap call behind it is shown, with credits.
+So I built an analyst that answers why: 3.34 points of it was market beta, 0.06 sector, 0.01 the coin itself. Every @CoinMarketCap call is shown, with credits.
 
 It hunts moves on its own, every 4h.
 
