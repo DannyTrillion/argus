@@ -68,6 +68,76 @@ with the same numbers shown on the screen.
 claude-sonnet-5 for unattended work), React 19, Vite, Tailwind v4, ECharts, motion. 15 unit
 tests over the analytics, the anomaly detector and the parsers.
 
+## BUIDL form: what to paste where
+
+DoraHacks asks for these fields. Everything below is ready to paste.
+
+**BUIDL name**
+
+```
+Argus
+```
+
+**One-line intro / tagline**
+
+```
+An AI analyst that watches CoinMarketCap for you: it finds the unusual moves, investigates them, and shows every API call behind the answer.
+```
+
+**Track**
+
+```
+AI Agents and Automation
+```
+
+**Demo video**
+
+```
+https://youtu.be/eG0nNZ3ARUE
+```
+
+**Repository**
+
+```
+https://github.com/DannyTrillion/argus
+```
+
+**Live demo / website**
+
+```
+https://argus-production-d392.up.railway.app
+```
+
+**X post**
+
+```
+https://x.com/sadboy_042/status/2100711426629214664
+```
+
+**Logo / cover image**
+
+Upload `docs/marketing/x-banner.png` as the cover. For the logo, use `web/public/mascot-512.png`.
+
+**Gallery screenshots**, in this order (in `docs/marketing/gallery/`):
+
+1. `01-home.jpg` - the home screen with the findings carousel
+2. `03-analyst.jpg` - an analyst answer with the evidence panel listing CoinMarketCap calls
+3. `04-explain-fear-greed.jpg` - a stored explainer with its live reading
+4. `07-portfolio.jpg` - a portfolio priced and attributed
+5. `10-status.jpg` - plan usage, endpoint probes, AI spend and the CoinMarketCap budget
+
+**Tech stack / tags**
+
+```
+TypeScript, Node, Hono, React, Vite, Tailwind, ECharts, Anthropic Claude (tool runner), CoinMarketCap Pro API, Railway
+```
+
+**Team**
+
+```
+Solo: Daniel Makinde (DannyTrillion)
+```
+
 ## BUIDL: CoinMarketCap endpoints used
 
 Paste this list into the "endpoints" field. All under `pro-api.coinmarketcap.com`, header
