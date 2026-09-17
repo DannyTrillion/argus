@@ -14,6 +14,8 @@ Built for the [Build with CMC: API Hackathon](https://dorahacks.io/hackathon/coi
 track **AI Agents and Automation**. Live: **https://argus-production-d392.up.railway.app**
 Two-minute demo: **https://youtu.be/eG0nNZ3ARUE**
 
+![Argus: every dashboard tells you what moved, this one tells you why](docs/marketing/x-banner.png)
+
 ## Screens
 
 | Screen | What it shows |

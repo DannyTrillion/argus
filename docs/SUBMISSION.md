@@ -192,28 +192,45 @@ Tags: `CoinMarketCap, crypto API, hackathon, AI agent, Claude, crypto dashboard,
 
 ## X post draft
 
-Post from your account, tag @CoinMarketCap, attach a 20–30s screen clip of the coverflow
-and the analyst evidence panel. Replace `<buidl-url>`.
+Post the hook with the banner attached, then put the links in the first reply: links eat into
+the 280 characters and the hook lands harder alone. Tag @CoinMarketCap once, in the main post.
 
-> Built Argus for #BuildwithCMC: a market terminal with an AI analyst that watches
-> @CoinMarketCap for you.
->
-> Every 4 hours it scans the top 200, flags unusual moves, investigates them and writes the
-> headline. Ask "why is SOL moving" and it splits the move into market beta, sector and
-> coin-specific, showing every API call and its credit cost.
->
-> 20 CMC endpoints, 19 agent tools, one owl.
->
-> Demo: https://youtu.be/eG0nNZ3ARUE
-> Live: https://argus-production-d392.up.railway.app
-> BUIDL: <buidl-url>
+**Post 1** (281 characters, attach `docs/marketing/x-banner.png`)
 
-Alternate shorter version if the clip carries it:
+```
+I got tired of dashboards that just say "SOL -3%".
 
-> Argus watches @CoinMarketCap so you don't have to. Scans, flags, investigates, explains,
-> and shows every call it made. #BuildwithCMC
-> <buidl-url>
-> https://youtu.be/eG0nNZ3ARUE
+So I built an analyst that answers why: 3.34 points of that move was market beta, 0.06 sector, 0.01 the coin itself. Every @CoinMarketCap call behind it is shown, with credits.
+
+It hunts moves on its own, every 4h.
+
+#BuildwithCMC
+```
+
+**Reply**
+
+```
+Demo (2 min): https://youtu.be/eG0nNZ3ARUE
+Live: https://argus-production-d392.up.railway.app
+Code: https://github.com/DannyTrillion/argus
+BUIDL: <paste after submitting>
+```
+
+**Image alt text** (X asks for it; judges and screen readers both benefit)
+
+```
+Argus banner: "Every dashboard tells you what moved. This one tells you why." beside a screenshot of the Argus analyst answering "Why is SOL moving today?", showing the move split into market beta, sector and coin-specific, with the list of CoinMarketCap calls it made.
+```
+
+**Alternative hook** if you want the build angle instead of the product angle:
+
+```
+Three weeks, one owl, 20 CoinMarketCap endpoints.
+
+Argus scans 200 coins every 4h, flags what is strange for that coin, investigates it and writes the headline itself. Then it shows every @CoinMarketCap call and what it cost.
+
+#BuildwithCMC
+```
 
 ## Before pushing
 
