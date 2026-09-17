@@ -138,6 +138,12 @@ Dashboards say SOL fell 3%. Nobody says why. Argus watches 200 coins, investigat
 Crypto / Web3 (add AI / Robotics too if the form allows more than one)
 ```
 
+**Profile tab, optional fields**
+
+- Key innovation domains: `AI Agents`, `Data & Analytics`, `Developer Tools`, `Trading` (type them if they are not in the list; two to four is plenty)
+- Layer-1s, Layer-2s, Appchains: leave empty. Argus deploys no contracts and reads CoinMarketCap across every chain, and the tracks are chain-neutral on purpose.
+- Other open source ecosystems: `API markets` if the field accepts it, otherwise leave empty.
+
 **Cover image**
 
 Upload `docs/marketing/x-banner.png`.
