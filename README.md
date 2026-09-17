@@ -12,6 +12,7 @@ twice a day it writes a market brief without anyone typing a prompt.
 
 Built for the [Build with CMC: API Hackathon](https://dorahacks.io/hackathon/coinmarketcap-api-202609/detail),
 track **AI Agents and Automation**. Live: **https://argus-production-d392.up.railway.app**
+Two-minute demo: **https://youtu.be/eG0nNZ3ARUE**
 
 ## Screens
 

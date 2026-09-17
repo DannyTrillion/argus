@@ -7,13 +7,13 @@ Deadline: **30 Sep 2026, 23:59 UTC**. Track: **AI Agents and Automation**.
 
 - [x] Register on DoraHacks with the same email as the CoinMarketCap API account
 - [ ] Rotate the CoinMarketCap and Anthropic keys, then run the pre-push check at the bottom of this file
-- [ ] Push the public repo `DannyTrillion/argus` (MIT, README, `.env.example`, no `.env`)
+- [x] Public repo: https://github.com/DannyTrillion/argus (MIT, README, `.env.example`, no `.env`)
 - [x] Deployed on Railway: https://argus-production-d392.up.railway.app (project `argus`, service `argus`, volume at `/app/.cache`)
 - [ ] In the browser you record with, open `/keys` and add your own Anthropic key: "Scan now" only runs on a visitor's own key
 - [ ] If automation is paused, open `/status` and unlock the switch with `ARGUS_ADMIN_TOKEN` from your local `.env`
 - [ ] An hour before recording, press "Scan now" so the coverflow has fresh findings
-- [ ] Record the video before 30 September, while the Startup plan is active: after submissions close the key reverts to Basic and liquidations stop working
-- [ ] Record the 2-minute video in your own voice (script below), upload unlisted to YouTube
+- [x] Recorded 17 September, while the Startup plan is active
+- [x] Video: https://youtu.be/eG0nNZ3ARUE (set it to Unlisted, not Private, so judges can open it)
 - [ ] Nothing to switch for judging: the live site detects the Basic plan from 1 October and turns on judging mode by itself (see README, "CoinMarketCap budget and judging mode")
 - [ ] Post on X with `#BuildwithCMC`, linking the BUIDL page (draft below), paste the post URL into the BUIDL
 - [ ] Submit the BUIDL: title, tagline, description, repo, video, live URL, X post, API feedback
@@ -154,6 +154,42 @@ your browser and is never stored."
 "Plan usage, endpoint probes and owner-only controls. Built for Build with CMC. Repo and live
 link are in the submission."
 
+## YouTube listing
+
+**Title**
+
+```
+Argus: an AI analyst that watches CoinMarketCap for you
+```
+
+**Description** (chapters assume the script's timings; check them against the recording)
+
+```
+Argus is a crypto market terminal with an AI analyst built on live CoinMarketCap data. Built solo for the Build with CMC: API Hackathon, track: AI Agents and Automation.
+
+Every four hours it scans the top 200 coins with hourly quotes-historical, flags moves that are unusual for that coin rather than just the biggest movers, investigates them with the full tool set, and writes the headline itself. Ask it "why is SOL moving today" and it splits the move into market beta, sector and coin-specific, then shows every CoinMarketCap call it made with the credit cost.
+
+Live: https://argus-production-d392.up.railway.app
+Code: https://github.com/DannyTrillion/argus
+
+Chapters
+0:00 What Argus is
+0:15 A finding the agent wrote itself
+0:35 The analyst, with its evidence panel
+1:00 Explain: instant readings, no AI call
+1:20 Portfolio: paste what you hold
+1:40 Scan on demand with your own key
+1:52 Plan usage and endpoint probes
+
+CoinMarketCap endpoints used: cryptocurrency map, quotes/latest, listings/latest, quotes/historical, ohlcv/historical, info, price-performance-stats, categories, category, trending/latest, trending/gainers-losers, global-metrics latest and historical, fear-and-greed latest and historical, altcoin-season-index, derivatives liquidations by window and by coin, content/latest, key/info.
+
+Built with TypeScript, Hono, the Anthropic SDK tool runner, React and ECharts.
+
+#BuildwithCMC
+```
+
+Tags: `CoinMarketCap, crypto API, hackathon, AI agent, Claude, crypto dashboard, BuildwithCMC`
+
 ## X post draft
 
 Post from your account, tag @CoinMarketCap, attach a 20–30s screen clip of the coverflow
@@ -168,6 +204,7 @@ and the analyst evidence panel. Replace `<buidl-url>`.
 >
 > 20 CMC endpoints, 19 agent tools, one owl.
 >
+> Demo: https://youtu.be/eG0nNZ3ARUE
 > Live: https://argus-production-d392.up.railway.app
 > BUIDL: <buidl-url>
 
@@ -176,6 +213,7 @@ Alternate shorter version if the clip carries it:
 > Argus watches @CoinMarketCap so you don't have to. Scans, flags, investigates, explains,
 > and shows every call it made. #BuildwithCMC
 > <buidl-url>
+> https://youtu.be/eG0nNZ3ARUE
 
 ## Before pushing
 
