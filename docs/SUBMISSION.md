@@ -15,7 +15,7 @@ Deadline: **30 Sep 2026, 23:59 UTC**. Track: **AI Agents and Automation**.
 - [x] Recorded 17 September, while the Startup plan is active
 - [x] Video: https://youtu.be/eG0nNZ3ARUE (set it to Unlisted, not Private, so judges can open it)
 - [ ] Nothing to switch for judging: the live site detects the Basic plan from 1 October and turns on judging mode by itself (see README, "CoinMarketCap budget and judging mode")
-- [ ] Post on X with `#BuildwithCMC`, linking the BUIDL page (draft below), paste the post URL into the BUIDL
+- [x] Posted on X: https://x.com/sadboy_042/status/2100711426629214664 (paste this URL into the BUIDL, and reply to the post with the BUIDL link once it exists)
 - [ ] Submit the BUIDL: title, tagline, description, repo, video, live URL, X post, API feedback
 
 ## BUIDL: title and tagline
